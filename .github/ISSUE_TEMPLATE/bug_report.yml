@@ -1,0 +1,51 @@
+name: Bug report
+description: Something isn't working as expected.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. Include the full command you ran and the error / unexpected output.
+      placeholder: |
+        Ran: uv run wikigame play "Canada" "Monty Python"
+        Expected: ...
+        Got: ...
+    validations:
+      required: true
+
+  - type: input
+    id: agent
+    attributes:
+      label: Agent
+      description: Which agent strategy?
+      placeholder: react
+    validations:
+      required: false
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Inspect model id (e.g. openai/gpt-4o-mini)
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Output of `git rev-parse HEAD` or the release tag.
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Python version, OS, anything else relevant.
+      placeholder: |
+        Python 3.12.x
+        Ubuntu 24.04
+    validations:
+      required: false
