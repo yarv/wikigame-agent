@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.2.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.2.0...wikigame-agent-v0.2.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **config:** point default User-Agent at this repo, not claude-code ([#7](https://github.com/yarv/wikigame-agent/issues/7)) ([d81a9ca](https://github.com/yarv/wikigame-agent/commit/d81a9ca9de0fee2444d61d49f58119b507383bcb))
+
 ## [0.2.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.1.0...wikigame-agent-v0.2.0) (2026-05-15)
 
 
