@@ -32,3 +32,10 @@ def on_page(game: WikiGame) -> str:
 NEXT_STEP = "What will you do next?"
 
 STEP_PROMPT = "Think step by step about your next move, then act."
+
+# Used only when the move turn is split into two calls (`--proxy-reasoning`).
+REASON_PROMPT = (
+    "Think step by step. Which link from the current page is most likely "
+    "to lead toward the goal, and why?"
+)
+ACT_PROMPT = "Now act on your reasoning."
