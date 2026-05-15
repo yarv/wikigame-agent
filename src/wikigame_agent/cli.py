@@ -44,9 +44,11 @@ def play(
         str | None,
         typer.Option(
             help="Reasoning effort for o-series / gpt-5 models "
-            "(none|minimal|low|medium|high|xhigh|max). Provider default if unset."
+            "(none|minimal|low|medium|high|xhigh|max). Ignored by non-reasoning models. "
+            "Defaults to medium because the gpt-5 family's own default is `minimal`, "
+            "which leaves react/history agents without enough reasoning to plan."
         ),
-    ] = None,
+    ] = "medium",
     proxy_reasoning: Annotated[
         bool,
         typer.Option(
