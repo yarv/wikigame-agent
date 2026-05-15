@@ -16,10 +16,12 @@ from . import display
 from .agents import AGENTS, AgentName
 from .config import settings
 from .game import Rule, WikiGameRules
+from .pricing import register_prices
 from .tools import check_path, get_content, move_page
 from .wiki_client import WikiClient
 
 load_dotenv()
+register_prices()
 
 app = typer.Typer(add_completion=False, help="Wiki Game LLM agent.")
 
@@ -171,7 +173,7 @@ async def _run(
 
         # Stay on a single event loop so httpx sockets aren't orphaned when
         # inspect's loop tears down (caused "Event loop is closed" on exit).
-        await eval_async(
+        eval_logs = await eval_async(
             wiki_task(),
             solver=solver,
             log_dir=log_dir,
@@ -179,7 +181,8 @@ async def _run(
             **eval_kwargs,
         )
 
-        display.print_summary(game)
+        usage = eval_logs[0].stats.model_usage if eval_logs else None
+        display.print_summary(game, usage=usage)
 
 
 @app.command()

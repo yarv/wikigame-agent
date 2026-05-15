@@ -1,0 +1,707 @@
+{
+  "_source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
+  "models": {
+    "anthropic/claude-3-7-sonnet-20250219": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "anthropic/claude-3-haiku-20240307": {
+      "input": 2.5e-07,
+      "output": 1.25e-06,
+      "cache_read": 3e-08,
+      "cache_write": 3e-07
+    },
+    "anthropic/claude-3-opus-20240229": {
+      "input": 1.5e-05,
+      "output": 7.5e-05,
+      "cache_read": 1.5e-06,
+      "cache_write": 1.875e-05
+    },
+    "anthropic/claude-4-opus-20250514": {
+      "input": 1.5e-05,
+      "output": 7.5e-05,
+      "cache_read": 1.5e-06,
+      "cache_write": 1.875e-05
+    },
+    "anthropic/claude-4-sonnet-20250514": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "anthropic/claude-haiku-4-5": {
+      "input": 1e-06,
+      "output": 5e-06,
+      "cache_read": 1e-07,
+      "cache_write": 1.25e-06
+    },
+    "anthropic/claude-haiku-4-5-20251001": {
+      "input": 1e-06,
+      "output": 5e-06,
+      "cache_read": 1e-07,
+      "cache_write": 1.25e-06
+    },
+    "anthropic/claude-opus-4-1": {
+      "input": 1.5e-05,
+      "output": 7.5e-05,
+      "cache_read": 1.5e-06,
+      "cache_write": 1.875e-05
+    },
+    "anthropic/claude-opus-4-1-20250805": {
+      "input": 1.5e-05,
+      "output": 7.5e-05,
+      "cache_read": 1.5e-06,
+      "cache_write": 1.875e-05
+    },
+    "anthropic/claude-opus-4-20250514": {
+      "input": 1.5e-05,
+      "output": 7.5e-05,
+      "cache_read": 1.5e-06,
+      "cache_write": 1.875e-05
+    },
+    "anthropic/claude-opus-4-5": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-opus-4-5-20251101": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-opus-4-6": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-opus-4-6-20260205": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-opus-4-7": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-opus-4-7-20260416": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
+    "anthropic/claude-sonnet-4-20250514": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "anthropic/claude-sonnet-4-5": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "anthropic/claude-sonnet-4-5-20250929": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "anthropic/claude-sonnet-4-6": {
+      "input": 3e-06,
+      "output": 1.5e-05,
+      "cache_read": 3e-07,
+      "cache_write": 3.75e-06
+    },
+    "openai/chatgpt-4o-latest": {
+      "input": 5e-06,
+      "output": 1.5e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-3.5-turbo": {
+      "input": 3e-06,
+      "output": 6e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-3.5-turbo-0125": {
+      "input": 3e-06,
+      "output": 6e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-3.5-turbo-0613": {
+      "input": 3e-06,
+      "output": 6e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-3.5-turbo-1106": {
+      "input": 3e-06,
+      "output": 6e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4-0613": {
+      "input": 3e-05,
+      "output": 6e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4.1-2025-04-14": {
+      "input": 3e-06,
+      "output": 1.2e-05,
+      "cache_read": 7.5e-07,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4.1-mini-2025-04-14": {
+      "input": 8e-07,
+      "output": 3.2e-06,
+      "cache_read": 2e-07,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4.1-nano-2025-04-14": {
+      "input": 2e-07,
+      "output": 8e-07,
+      "cache_read": 5e-08,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4o-2024-08-06": {
+      "input": 3.75e-06,
+      "output": 1.5e-05,
+      "cache_read": 1.875e-06,
+      "cache_write": null
+    },
+    "openai/ft:gpt-4o-2024-11-20": {
+      "input": 3.75e-06,
+      "output": 1.5e-05,
+      "cache_read": null,
+      "cache_write": 1.875e-06
+    },
+    "openai/ft:gpt-4o-mini-2024-07-18": {
+      "input": 3e-07,
+      "output": 1.2e-06,
+      "cache_read": 1.5e-07,
+      "cache_write": null
+    },
+    "openai/ft:o4-mini-2025-04-16": {
+      "input": 4e-06,
+      "output": 1.6e-05,
+      "cache_read": 1e-06,
+      "cache_write": null
+    },
+    "openai/gpt-3.5-turbo": {
+      "input": 5e-07,
+      "output": 1.5e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-3.5-turbo-0125": {
+      "input": 5e-07,
+      "output": 1.5e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-3.5-turbo-1106": {
+      "input": 1e-06,
+      "output": 2e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-3.5-turbo-16k": {
+      "input": 3e-06,
+      "output": 4e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4": {
+      "input": 3e-05,
+      "output": 6e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-0125-preview": {
+      "input": 1e-05,
+      "output": 3e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-0314": {
+      "input": 3e-05,
+      "output": 6e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-0613": {
+      "input": 3e-05,
+      "output": 6e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-1106-preview": {
+      "input": 1e-05,
+      "output": 3e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-turbo": {
+      "input": 1e-05,
+      "output": 3e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-turbo-2024-04-09": {
+      "input": 1e-05,
+      "output": 3e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4-turbo-preview": {
+      "input": 1e-05,
+      "output": 3e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4.1": {
+      "input": 2e-06,
+      "output": 8e-06,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4.1-2025-04-14": {
+      "input": 2e-06,
+      "output": 8e-06,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4.1-mini": {
+      "input": 4e-07,
+      "output": 1.6e-06,
+      "cache_read": 1e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4.1-mini-2025-04-14": {
+      "input": 4e-07,
+      "output": 1.6e-06,
+      "cache_read": 1e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4.1-nano": {
+      "input": 1e-07,
+      "output": 4e-07,
+      "cache_read": 2.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4.1-nano-2025-04-14": {
+      "input": 1e-07,
+      "output": 4e-07,
+      "cache_read": 2.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4o": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-2024-05-13": {
+      "input": 5e-06,
+      "output": 1.5e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-2024-08-06": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-2024-11-20": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-audio-preview": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-audio-preview-2024-12-17": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-audio-preview-2025-06-03": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-2024-07-18": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-audio-preview": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-audio-preview-2024-12-17": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-realtime-preview": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": 3e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-realtime-preview-2024-12-17": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": 3e-07,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-search-preview": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4o-mini-search-preview-2025-03-11": {
+      "input": 1.5e-07,
+      "output": 6e-07,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-4o-realtime-preview": {
+      "input": 5e-06,
+      "output": 2e-05,
+      "cache_read": 2.5e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-realtime-preview-2024-12-17": {
+      "input": 5e-06,
+      "output": 2e-05,
+      "cache_read": 2.5e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-realtime-preview-2025-06-03": {
+      "input": 5e-06,
+      "output": 2e-05,
+      "cache_read": 2.5e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-search-preview": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-06,
+      "cache_write": null
+    },
+    "openai/gpt-4o-search-preview-2025-03-11": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-06,
+      "cache_write": null
+    },
+    "openai/gpt-5": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5-2025-08-07": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5-chat": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5-chat-latest": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5-mini": {
+      "input": 2.5e-07,
+      "output": 2e-06,
+      "cache_read": 2.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5-mini-2025-08-07": {
+      "input": 2.5e-07,
+      "output": 2e-06,
+      "cache_read": 2.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5-nano": {
+      "input": 5e-08,
+      "output": 4e-07,
+      "cache_read": 5e-09,
+      "cache_write": null
+    },
+    "openai/gpt-5-nano-2025-08-07": {
+      "input": 5e-08,
+      "output": 4e-07,
+      "cache_read": 5e-09,
+      "cache_write": null
+    },
+    "openai/gpt-5-search-api": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5-search-api-2025-10-14": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.1": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.1-2025-11-13": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.1-chat-latest": {
+      "input": 1.25e-06,
+      "output": 1e-05,
+      "cache_read": 1.25e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.2": {
+      "input": 1.75e-06,
+      "output": 1.4e-05,
+      "cache_read": 1.75e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.2-2025-12-11": {
+      "input": 1.75e-06,
+      "output": 1.4e-05,
+      "cache_read": 1.75e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.2-chat-latest": {
+      "input": 1.75e-06,
+      "output": 1.4e-05,
+      "cache_read": 1.75e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.3-chat-latest": {
+      "input": 1.75e-06,
+      "output": 1.4e-05,
+      "cache_read": 1.75e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.4": {
+      "input": 2.5e-06,
+      "output": 1.5e-05,
+      "cache_read": 2.5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.4-2026-03-05": {
+      "input": 2.5e-06,
+      "output": 1.5e-05,
+      "cache_read": 2.5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.4-mini": {
+      "input": 7.5e-07,
+      "output": 4.5e-06,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5.4-mini-2026-03-17": {
+      "input": 7.5e-07,
+      "output": 4.5e-06,
+      "cache_read": 7.5e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5.4-nano": {
+      "input": 2e-07,
+      "output": 1.25e-06,
+      "cache_read": 2e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5.4-nano-2026-03-17": {
+      "input": 2e-07,
+      "output": 1.25e-06,
+      "cache_read": 2e-08,
+      "cache_write": null
+    },
+    "openai/gpt-5.5": {
+      "input": 5e-06,
+      "output": 3e-05,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-5.5-2026-04-23": {
+      "input": 5e-06,
+      "output": 3e-05,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/gpt-audio": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-audio-1.5": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-audio-2025-08-28": {
+      "input": 2.5e-06,
+      "output": 1e-05,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-audio-mini": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-audio-mini-2025-10-06": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-audio-mini-2025-12-15": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-realtime": {
+      "input": 4e-06,
+      "output": 1.6e-05,
+      "cache_read": 4e-07,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-1.5": {
+      "input": 4e-06,
+      "output": 1.6e-05,
+      "cache_read": 4e-07,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-2": {
+      "input": 4e-06,
+      "output": 1.6e-05,
+      "cache_read": 4e-07,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-2025-08-28": {
+      "input": 4e-06,
+      "output": 1.6e-05,
+      "cache_read": 4e-07,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-mini": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": null,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-mini-2025-10-06": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": 6e-08,
+      "cache_write": null
+    },
+    "openai/gpt-realtime-mini-2025-12-15": {
+      "input": 6e-07,
+      "output": 2.4e-06,
+      "cache_read": 6e-08,
+      "cache_write": null
+    },
+    "openai/o1": {
+      "input": 1.5e-05,
+      "output": 6e-05,
+      "cache_read": 7.5e-06,
+      "cache_write": null
+    },
+    "openai/o1-2024-12-17": {
+      "input": 1.5e-05,
+      "output": 6e-05,
+      "cache_read": 7.5e-06,
+      "cache_write": null
+    },
+    "openai/o3": {
+      "input": 2e-06,
+      "output": 8e-06,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/o3-2025-04-16": {
+      "input": 2e-06,
+      "output": 8e-06,
+      "cache_read": 5e-07,
+      "cache_write": null
+    },
+    "openai/o3-mini": {
+      "input": 1.1e-06,
+      "output": 4.4e-06,
+      "cache_read": 5.5e-07,
+      "cache_write": null
+    },
+    "openai/o3-mini-2025-01-31": {
+      "input": 1.1e-06,
+      "output": 4.4e-06,
+      "cache_read": 5.5e-07,
+      "cache_write": null
+    },
+    "openai/o4-mini": {
+      "input": 1.1e-06,
+      "output": 4.4e-06,
+      "cache_read": 2.75e-07,
+      "cache_write": null
+    },
+    "openai/o4-mini-2025-04-16": {
+      "input": 1.1e-06,
+      "output": 4.4e-06,
+      "cache_read": 2.75e-07,
+      "cache_write": null
+    }
+  }
+}

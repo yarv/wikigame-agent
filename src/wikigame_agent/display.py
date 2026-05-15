@@ -6,6 +6,9 @@ when run with `display='plain'`."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
+from inspect_ai.model import ModelUsage
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -61,14 +64,50 @@ def print_move(game: WikiGame, previous: WikiPage, current: WikiPage) -> None:
     console.print(Panel(body, border_style=style, expand=False))
 
 
-def print_summary(game: WikiGame) -> None:
+def print_summary(
+    game: WikiGame,
+    usage: Mapping[str, ModelUsage] | None = None,
+) -> None:
     won = game.check_win()
     turns = len(game.page_history) - 1
     color = "green" if won else "yellow"
     title = "Goal reached" if won else "Game ended without reaching goal"
+
+    rolled = _roll_up(usage) if usage else None
+
     body = Text.assemble(
         (f"Turns: {turns}\n", "dim"),
         ("Path: ", "dim"),
         (" -> ".join(game.page_history)),
     )
+    if rolled is not None:
+        body.append("\n")
+        body.append(_format_usage_line(rolled), style="dim")
+        body.append("\n")
+        body.append(_format_cost_line(rolled), style="bold")
     console.print(Panel(body, title=title, border_style=color))
+
+
+def _roll_up(usage: Mapping[str, ModelUsage]) -> ModelUsage:
+    total = ModelUsage()
+    for u in usage.values():
+        total = total + u
+    return total
+
+
+def _format_usage_line(usage: ModelUsage) -> str:
+    parts = [
+        f"in {usage.input_tokens:,}",
+        f"out {usage.output_tokens:,}",
+    ]
+    if usage.input_tokens_cache_read:
+        parts.append(f"cache {usage.input_tokens_cache_read:,}")
+    if usage.reasoning_tokens:
+        parts.append(f"reasoning {usage.reasoning_tokens:,}")
+    return f"Tokens: {usage.total_tokens:,} ({', '.join(parts)})"
+
+
+def _format_cost_line(usage: ModelUsage) -> str:
+    if usage.total_cost is None:
+        return "Cost: — (model not in pricing data)"
+    return f"Cost: ${usage.total_cost:.4f}"
