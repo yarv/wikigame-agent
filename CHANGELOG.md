@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.2.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.1.0...wikigame-agent-v0.2.0) (2026-05-15)
+
+
+### Features
+
+* **agents:** single model call per turn + force get_content before move ([#3](https://github.com/yarv/wikigame-agent/issues/3)) ([8f05e1a](https://github.com/yarv/wikigame-agent/commit/8f05e1a77c7cd6d4e87b8ea9bcdd09f89d79e01e))
+
 ## [0.1.0] - 2026-05-14
 
 Initial public release.
