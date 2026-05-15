@@ -54,13 +54,17 @@ uv run wikigame view             # opens http://localhost:7575
 uv run inspect view --log-dir logs
 ```
 
-## Run tests
+## Development
 
 ```bash
-uv run pytest
+make install        # uv sync --all-extras + installs pre-commit hooks
+make check          # ruff lint + format check + pytest (everything CI runs)
+make help           # list all targets
 ```
 
 Tests use [respx](https://github.com/lundberg/respx) to mock the MediaWiki API — no network required.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, including the Conventional Commits PR-title convention used to drive automatic version bumps and changelog updates via [release-please](https://github.com/googleapis/release-please).
 
 ## Design notes
 
