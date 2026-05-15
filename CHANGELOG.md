@@ -9,6 +9,18 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.6.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.5.1...wikigame-agent-v0.6.0) (2026-05-15)
+
+
+### Features
+
+* **pricing:** weekly model-price refresh + total cost in run summary ([#21](https://github.com/yarv/wikigame-agent/issues/21)) ([66f6271](https://github.com/yarv/wikigame-agent/commit/66f6271d19616f2ae32c2e26d20714e8cbfd1f83))
+
+
+### Bug Fixes
+
+* **tools:** block moves that redirect back to the current page ([#22](https://github.com/yarv/wikigame-agent/issues/22)) ([0241e64](https://github.com/yarv/wikigame-agent/commit/0241e64d70a9ee4f582202477eed9729f2207ad7))
+
 ## [0.5.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.5.0...wikigame-agent-v0.5.1) (2026-05-15)
 
 
