@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.3.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.2.1...wikigame-agent-v0.3.0) (2026-05-15)
+
+
+### Features
+
+* **cli:** name inspect tasks by agent + start/goal pages ([#10](https://github.com/yarv/wikigame-agent/issues/10)) ([3432a62](https://github.com/yarv/wikigame-agent/commit/3432a62b264514a019681ff5eb02fc145eab7ba6))
+
 ## [0.2.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.2.0...wikigame-agent-v0.2.1) (2026-05-15)
 
 
