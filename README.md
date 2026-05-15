@@ -75,7 +75,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, includ
 **Three agents, increasing in sophistication.**
 
 - `basic`: tool-call loop. Resets message history on every successful move.
-- `react`: explicit reason-then-act turns each step.
+- `react`: one model call per turn, alternating a forced `get_content` on each new page with a `move_page` call (reasoning text and the tool call come back in one response).
 - `history`: ReAct + carries a compact text record of prior moves across page transitions.
 
 ## Layout
@@ -85,7 +85,7 @@ src/wikigame_agent/
   wiki_client.py   # async MediaWiki client (the JSONDecodeError fix lives here)
   game.py          # WikiGame, WikiGameRules
   tools.py         # get_content, move_page, check_path
-  prompts.py       # system / on-page / next-step / reason / act
+  prompts.py       # system / on-page / next-step / step
   agents.py        # basic_agent, react_agent, history_agent
   display.py       # Rich-based turn-by-turn console output
   cli.py           # `wikigame play ...`, `wikigame view`
