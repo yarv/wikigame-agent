@@ -73,6 +73,16 @@ def move_page(game: WikiGame) -> Tool:
         except WikiClientError as e:
             return f"Move failed: could not load page {candidate!r}: {e}"
 
+        # MediaWiki redirects can resolve a differently-named link back to the
+        # page the agent is already on. Without this check, every such move
+        # looks successful; the react/history agents reset state after each
+        # success and re-pick the same link, exhausting the message budget.
+        if new_page.title.lower() == game.current_page.title.lower():
+            return (
+                f"Move failed: {candidate!r} redirects to {new_page.title!r}, "
+                f"which is the current page. Pick a different link."
+            )
+
         if isinstance(game, WikiGameRules):
             violation = game.violates_rules(new_page)
             if violation:
