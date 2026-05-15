@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.4.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.4.0...wikigame-agent-v0.4.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **release-please:** descend into tagged-value when matching uv.lock entry ([#14](https://github.com/yarv/wikigame-agent/issues/14)) ([a94c6d7](https://github.com/yarv/wikigame-agent/commit/a94c6d749e19573a151b1613f68ae06853cdeb2c))
+
 ## [0.4.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.3.0...wikigame-agent-v0.4.0) (2026-05-15)
 
 
