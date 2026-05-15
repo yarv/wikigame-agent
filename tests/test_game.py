@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from wikigame_agent.game import WikiGame, WikiGameRules
+from wikigame_agent.prompts import on_page
 from wikigame_agent.wiki_client import WikiClient
 
 
@@ -38,3 +39,45 @@ async def test_rules_violation_country(mock_wiki):
     async with WikiClient(user_agent="t") as client:
         game = await WikiGameRules.create(client, "Start", "Canada", rules=["no countries"])
         assert game.violates_rules(await client.get_page("Canada")) is not None
+
+
+async def test_rules_violation_city(mock_wiki):
+    mock_wiki.add_page("Start", content="Start links to Paris.", links=["Paris"])
+    mock_wiki.add_page(
+        "Paris",
+        content="Paris is the capital of France and a major European city.",
+        links=[],
+    )
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGameRules.create(client, "Start", "Paris", rules=["no cities"])
+        violation = game.violates_rules(await client.get_page("Paris"))
+        assert violation is not None
+        assert "city" in violation
+
+
+async def test_on_page_surfaces_active_rules(mock_wiki):
+    mock_wiki.add_page("Start", content="Start.", links=[])
+    mock_wiki.add_page("Goal", content="Goal.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        plain = await WikiGame.create(client, "Start", "Goal")
+        assert "Rules in effect" not in on_page(plain)
+
+        ruled = await WikiGameRules.create(
+            client, "Start", "Goal", rules=["no countries", "no cities"]
+        )
+        text = on_page(ruled)
+        assert "Rules in effect" in text
+        assert "no countries" in text
+        assert "no cities" in text
+
+
+async def test_rules_no_cities_does_not_block_countries(mock_wiki):
+    mock_wiki.add_page("Start", content="Start links to Canada.", links=["Canada"])
+    mock_wiki.add_page(
+        "Canada",
+        content="Canada is a country in North America.",
+        links=[],
+    )
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGameRules.create(client, "Start", "Canada", rules=["no cities"])
+        assert game.violates_rules(await client.get_page("Canada")) is None

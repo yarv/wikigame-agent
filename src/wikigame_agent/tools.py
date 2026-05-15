@@ -57,6 +57,11 @@ def move_page(game: WikiGame) -> Tool:
             A message describing whether the move succeeded.
         """
         candidate = page.replace("_", " ")
+        if candidate.lower() == game.current_page.title.lower():
+            return (
+                f"Move failed: {candidate!r} is the current page. Pick a "
+                f"different link to make progress."
+            )
         if not game.is_permitted_link(candidate):
             return (
                 f"Move failed: {candidate!r} is not a permitted link from the "

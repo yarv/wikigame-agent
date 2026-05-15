@@ -49,6 +49,24 @@ async def test_move_page_tool_success_and_failure(mock_wiki):
         assert game.check_win()
 
 
+async def test_move_page_rejects_self_link(mock_wiki):
+    # A self-link previously let the agent "move" to its own page and oscillate
+    # (see CLAUDE.md: gpt-5.4-mini self-looped on "Transvestic disorder").
+    mock_wiki.add_page(
+        "Loop",
+        content="Loop links to Loop and to Other.",
+        links=["Loop", "Other"],
+    )
+    mock_wiki.add_page("Other", content="Other.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "Loop", "Other")
+        tool_fn = move_page(game)
+        result = await tool_fn(page="Loop")
+        assert "failed" in result.lower()
+        assert game.current_page.title == "Loop"
+        assert game.page_history == ["Loop"]
+
+
 async def test_check_path_tool(mock_wiki):
     mock_wiki.add_page("A", content="A links to B.", links=["B"])
     mock_wiki.add_page("B", content="B links to C.", links=["C"])

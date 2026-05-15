@@ -5,7 +5,7 @@ from typing import Literal
 
 from .wiki_client import WikiClient, WikiPage
 
-Rule = Literal["no countries", "no pages with length above 30000"]
+Rule = Literal["no countries", "no cities", "no pages with length above 30000"]
 
 MoveListener = Callable[["WikiGame", WikiPage, WikiPage], Awaitable[None] | None]
 
@@ -99,6 +99,8 @@ class WikiGameRules(WikiGame):
         any rule, else None."""
         if "no countries" in self.rules and _is_country(page):
             return "rule violation: target page appears to be a country article"
+        if "no cities" in self.rules and _is_city(page):
+            return "rule violation: target page appears to be a city article"
         if "no pages with length above 30000" in self.rules and len(page.content) > 30000:
             return f"rule violation: target page is too long ({len(page.content)} > 30000 chars)"
         return None
@@ -107,5 +109,17 @@ class WikiGameRules(WikiGame):
 def _is_country(page: WikiPage) -> bool:
     # Cheap heuristic that matches the spirit of the notebook exercise.
     markers = ("is a country", "is a sovereign", "is a landlocked country")
+    head = page.content[:2000].lower()
+    return any(m in head for m in markers)
+
+
+def _is_city(page: WikiPage) -> bool:
+    markers = (
+        "is a city",
+        "is a town",
+        "is a municipality",
+        "is a village",
+        "is the capital",
+    )
     head = page.content[:2000].lower()
     return any(m in head for m in markers)
