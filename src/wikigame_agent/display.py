@@ -41,15 +41,13 @@ def attach(game: WikiGame) -> None:
 def print_move(game: WikiGame, previous: WikiPage, current: WikiPage) -> None:
     turn = len(game.page_history) - 1
     style = "green" if game.check_win() else "blue"
-    header = Text.assemble(
+    body = Text.assemble(
         ("Move ", "dim"),
         (f"{turn}: ", "bold"),
         (previous.title, "default"),
         ("  ->  ", "dim"),
         (current.title, "bold"),
     )
-    path = Text("Path: ", style="dim") + Text(" -> ".join(game.page_history))
-    body = Text.assemble(header, "\n", path)
     if game.check_win():
         body.append("\nReached goal page.", style="bold green")
     console.print(Panel(body, border_style=style, expand=False))
