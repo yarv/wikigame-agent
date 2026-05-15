@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 
 import httpx
@@ -45,6 +46,14 @@ class WikiNonJSONResponse(WikiClientError):
     rate-limit or error page). Retried by the client."""
 
 
+_DISAMBIGUATOR_RE = re.compile(r"\s*\([^)]+\)\s*$")
+
+
+def _strip_disambiguator(title: str) -> str:
+    """`"Mary Poppins (film)"` -> `"Mary Poppins"`."""
+    return _DISAMBIGUATOR_RE.sub("", title).strip()
+
+
 @dataclass(frozen=True)
 class WikiPage:
     title: str
@@ -53,17 +62,67 @@ class WikiPage:
     summary: str
     links: tuple[str, ...]
 
-    def permitted_links(self) -> list[str]:
-        """Links that actually appear in the page body, excluding self-links.
+    def link_index(self) -> dict[str, list[str]]:
+        """Display form -> list of target page titles, for body-visible links.
 
-        Mirrors the original notebook's heuristic for "main content" links."""
+        Mirrors the original notebook's "main content" heuristic, with two
+        extensions: (1) a link whose target has a parenthetical disambiguator
+        (e.g. ``"Mary Poppins (film)"``) is included if the bare form
+        (``"Mary Poppins"``) appears in the body — Wikipedia's plain-text
+        extract renders the display text, not the wikitext target; (2) a
+        single bare display form may map to multiple disambiguated targets
+        (``"Mary Poppins" -> ["Mary Poppins (film)", "Mary Poppins (character)"]``),
+        and the caller decides how to surface the ambiguity. Self-links are
+        excluded.
+        """
         content_lower = self.content.lower()
         title_lower = self.title.lower()
-        return [
-            link
-            for link in self.links
-            if link.lower() in content_lower and link.lower() != title_lower
-        ]
+        index: dict[str, list[str]] = {}
+        for link in self.links:
+            if link.lower() == title_lower:
+                continue
+            forms: list[str] = []
+            if link.lower() in content_lower:
+                forms.append(link)
+            bare = _strip_disambiguator(link)
+            if bare and bare.lower() != link.lower() and bare.lower() in content_lower:
+                forms.append(bare)
+            for form in forms:
+                bucket = index.setdefault(form, [])
+                if link not in bucket:
+                    bucket.append(link)
+        return index
+
+    def permitted_links(self) -> list[str]:
+        """Display forms agents can click. See :meth:`link_index`."""
+        return list(self.link_index().keys())
+
+    def resolve_link(self, candidate: str) -> str | list[str] | None:
+        """Map a click candidate to the target page title to fetch.
+
+        Returns:
+            - ``str``: the target title (unambiguous click).
+            - ``list[str]``: candidate targets, when ``candidate`` is a bare
+              display form that maps to multiple disambiguated targets.
+            - ``None``: ``candidate`` is not a valid move from this page.
+
+        Accepts either a body-visible display form (``"Mary Poppins"``) or
+        a disambiguated target name (``"Mary Poppins (film)"``) — the latter
+        is needed because the disambiguation hint shown to the agent lists
+        target names, and the agent will click those directly.
+        """
+        normalized = candidate.replace("_", " ").lower()
+        index = self.link_index()
+        # Direct hit on a body-visible display form.
+        for form, targets in index.items():
+            if form.lower() == normalized:
+                return targets[0] if len(targets) == 1 else list(targets)
+        # Hit on a disambiguated target listed inline alongside a bare form.
+        for targets in index.values():
+            for target in targets:
+                if target.lower() == normalized:
+                    return target
+        return None
 
 
 def _make_summary(content: str, max_chars: int = 500) -> str:

@@ -26,6 +26,48 @@ async def test_get_page_returns_content_and_links(mock_wiki):
     assert "United States" in page.permitted_links()
 
 
+async def test_link_index_handles_disambiguated_targets(mock_wiki):
+    # MediaWiki's plain-text extract renders the display text ("Mary Poppins"),
+    # but the underlying link target is the disambiguated form
+    # ("Mary Poppins (film)"). The index must map the bare form found in body
+    # to all candidate disambiguated targets.
+    mock_wiki.add_page(
+        "Saving Mr. Banks",
+        content="The film Mary Poppins premiered in 1964. Tangled also.",
+        links=["Mary Poppins (film)", "Mary Poppins (character)", "Tangled (2010 film)"],
+    )
+    async with WikiClient(user_agent="t") as client:
+        page = await client.get_page("Saving Mr. Banks")
+    index = page.link_index()
+    assert set(index["Mary Poppins"]) == {"Mary Poppins (film)", "Mary Poppins (character)"}
+    assert index["Tangled"] == ["Tangled (2010 film)"]
+    # `permitted_links` exposes the keys for body wrapping.
+    assert "Mary Poppins" in page.permitted_links()
+    assert "Tangled" in page.permitted_links()
+
+
+async def test_resolve_link_handles_bare_disambiguated_and_invalid(mock_wiki):
+    mock_wiki.add_page(
+        "Start",
+        content="Discusses Mary Poppins and Tangled.",
+        links=["Mary Poppins (film)", "Mary Poppins (character)", "Tangled (2010 film)"],
+    )
+    async with WikiClient(user_agent="t") as client:
+        page = await client.get_page("Start")
+    # Unambiguous bare form -> single target.
+    assert page.resolve_link("Tangled") == "Tangled (2010 film)"
+    # Ambiguous bare form -> list of candidates.
+    resolution = page.resolve_link("Mary Poppins")
+    assert isinstance(resolution, list)
+    assert set(resolution) == {"Mary Poppins (film)", "Mary Poppins (character)"}
+    # Direct disambiguated target.
+    assert page.resolve_link("Mary Poppins (film)") == "Mary Poppins (film)"
+    # Underscore normalization.
+    assert page.resolve_link("Tangled_(2010_film)") == "Tangled (2010 film)"
+    # Not a link on this page.
+    assert page.resolve_link("Walt Disney") is None
+
+
 async def test_get_page_caches(mock_wiki):
     mock_wiki.add_page("Cache Me", content="hello world.", links=[])
     async with WikiClient(user_agent="test-agent") as client:
