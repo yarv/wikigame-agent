@@ -4,7 +4,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
-An LLM agent that plays the [Wikipedia game](https://en.wikipedia.org/wiki/Wikipedia:Wikipedia_Game) (navigate from a starting page to a goal page using only links), built on [AISI Inspect](https://github.com/UKGovernmentBEIS/inspect_ai).
+An LLM agent that plays the [Wikipedia game/Wikiracing](https://en.wikipedia.org/wiki/Wikiracing) (navigate from a starting page to a goal page using only links), built on [AISI Inspect](https://github.com/UKGovernmentBEIS/inspect_ai).
 
 This started as a port of the Chapter 3.4 LLM Agents exercise from [ARENA 3.0](https://github.com/callummcdougall/ARENA_3.0) into a self-contained project. The notable changes over the original notebook:
 
