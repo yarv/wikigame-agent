@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.4.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.3.0...wikigame-agent-v0.4.0) (2026-05-15)
+
+
+### Features
+
+* **display:** drop redundant path line from move panel ([#12](https://github.com/yarv/wikigame-agent/issues/12)) ([4c8c9a4](https://github.com/yarv/wikigame-agent/commit/4c8c9a49a5271196e9eb9f4ae4bcd3f361fb55b0))
+
 ## [0.3.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.2.1...wikigame-agent-v0.3.0) (2026-05-15)
 
 
