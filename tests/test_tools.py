@@ -67,6 +67,32 @@ async def test_move_page_rejects_self_link(mock_wiki):
         assert game.page_history == ["Loop"]
 
 
+async def test_move_page_rejects_redirect_to_current_page(mock_wiki):
+    # Real failure mode observed on gpt-5.4-nano: agent clicked a link whose
+    # MediaWiki redirect resolved back to the page it was already on, and
+    # repeated this until the message budget ran out. The candidate string
+    # differs from the current page so the literal self-link guard misses it;
+    # we have to check the resolved title.
+    mock_wiki.add_page(
+        "Trap",
+        content="Trap links to Other and to RedirectsBack.",
+        links=["Other", "RedirectsBack"],
+    )
+    mock_wiki.add_page("Other", content="Other.", links=[])
+    # Simulate MediaWiki redirect: looking up "RedirectsBack" returns the Trap
+    # page (same payload, canonical title "Trap").
+    mock_wiki._pages["redirectsback"] = mock_wiki._pages["trap"]
+
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "Trap", "Other")
+        tool_fn = move_page(game)
+        result = await tool_fn(page="RedirectsBack")
+        assert "failed" in result.lower()
+        assert "redirect" in result.lower()
+        assert game.current_page.title == "Trap"
+        assert game.page_history == ["Trap"]
+
+
 async def test_check_path_tool(mock_wiki):
     mock_wiki.add_page("A", content="A links to B.", links=["B"])
     mock_wiki.add_page("B", content="B links to C.", links=["C"])
