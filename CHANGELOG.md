@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.5.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.4.1...wikigame-agent-v0.5.0) (2026-05-15)
+
+
+### Features
+
+* **game:** add no-cities rule, surface rules to agent, block self-links ([#16](https://github.com/yarv/wikigame-agent/issues/16)) ([b14dad3](https://github.com/yarv/wikigame-agent/commit/b14dad34b42005607cf766e2d55953713d5c0eb9))
+
 ## [0.4.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.4.0...wikigame-agent-v0.4.1) (2026-05-15)
 
 
