@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 from typing import Annotated
 
 import typer
@@ -21,6 +22,22 @@ from .wiki_client import WikiClient
 load_dotenv()
 
 app = typer.Typer(add_completion=False, help="Wiki Game LLM agent.")
+
+
+_MAX_TITLE_SLUG = 60
+
+
+def _slug(text: str) -> str:
+    """Filesystem-safe slug for a Wikipedia title (spaces/punct → '-')."""
+    cleaned = re.sub(r"[^\w.-]+", "-", text).strip("-")
+    if len(cleaned) > _MAX_TITLE_SLUG:
+        cleaned = cleaned[:_MAX_TITLE_SLUG].rstrip("-")
+    return cleaned or "untitled"
+
+
+def _task_name(agent_name: str, start: str, goal: str) -> str:
+    """Inspect task name used to label log files: `<agent>_<start>_to_<goal>`."""
+    return f"{agent_name}_{_slug(start)}_to_{_slug(goal)}"
 
 
 @app.command()
@@ -116,11 +133,14 @@ async def _run(
             factory_kwargs["proxy_reasoning"] = proxy_reasoning
         solver = as_solver(agent_factory(**factory_kwargs))
 
+        run_name = _task_name(agent_name, start, goal)
+
         @task
         def wiki_task() -> Task:
             return Task(
                 dataset=[Sample(input="", target="")],
                 message_limit=message_limit,
+                name=run_name,
             )
 
         eval_kwargs: dict = {}
