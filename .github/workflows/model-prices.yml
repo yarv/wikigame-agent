@@ -1,0 +1,46 @@
+name: Refresh model prices
+
+# Re-renders MODEL_PRICES.md from LiteLLM's pricing JSON each Monday and
+# opens a PR if anything changed. Manual runs allowed via workflow_dispatch.
+# Uses RELEASE_PLEASE_TOKEN (not GITHUB_TOKEN) so the PR triggers CI — same
+# rationale as the release-please workflow.
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate report
+        run: python scripts/check_model_prices.py
+
+      - name: Open PR if changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          commit-message: "chore: refresh model prices"
+          title: "chore: refresh model prices"
+          body: |
+            Automated weekly refresh of `MODEL_PRICES.md` from
+            [LiteLLM's pricing JSON](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json).
+
+            Only the price table changed — no code changes.
+          branch: chore/refresh-model-prices
+          delete-branch: true
+          add-paths: |
+            MODEL_PRICES.md
+            src/wikigame_agent/data/model_prices.json
