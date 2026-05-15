@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.5.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.5.0...wikigame-agent-v0.5.1) (2026-05-15)
+
+
+### Documentation
+
+* **contributing:** drop solo-maintainer ops section ([#19](https://github.com/yarv/wikigame-agent/issues/19)) ([4965c07](https://github.com/yarv/wikigame-agent/commit/4965c07d6c34e5de0aa9498a74350618f10326ea))
+
 ## [0.5.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.4.1...wikigame-agent-v0.5.0) (2026-05-15)
 
 
