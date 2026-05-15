@@ -23,13 +23,16 @@ cp .env.example .env          # then fill in OPENAI_API_KEY etc.
 ## Play a game
 
 ```bash
-uv run wikigame play "Canada" "Monty Python"
+uv run wikigame play "Canada" "Monty Python" \
+  --model openai/gpt-5.4-nano --reasoning-effort medium
 ```
 
 Options:
 
 - `--agent {basic,react,history}` — default `react`
-- `--model openai/gpt-4o-mini` — overrides `INSPECT_EVAL_MODEL`
+- `--model openai/gpt-5.4-nano` — overrides `INSPECT_EVAL_MODEL`
+- `--reasoning-effort {none|minimal|low|medium|high|xhigh|max}` — for o-series and gpt-5 models. The `react`/`history` agents rely on the model reasoning before each move; on a reasoning model that means setting this to at least `low`. On the OpenAI gpt-5 family the default is `minimal`, which produces no useful reasoning and the agent will flounder.
+- `--proxy-reasoning` — for models without native reasoning (e.g. `gpt-4o-mini`) or with reasoning effort set to `minimal`. Splits each move turn into a separate text-only reason call (forced `tool_choice="none"`) followed by an act call, so the model's CoT shows up in plain text. Roughly doubles per-move model calls, so prefer a reasoning model when possible.
 - `--message-limit 80` — Inspect aborts the run past this
 - `--enable-check-path` — adds the `check_path` dry-run tool
 - `-v` — debug logging
@@ -75,7 +78,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, includ
 **Three agents, increasing in sophistication.**
 
 - `basic`: tool-call loop. Resets message history on every successful move.
-- `react`: explicit reason-then-act turns each step.
+- `react`: one model call per turn, alternating a forced `get_content` on each new page with a `move_page` call (reasoning text and the tool call come back in one response). Use `--proxy-reasoning` to split the move turn into a separate reason + act pair for models without native reasoning.
 - `history`: ReAct + carries a compact text record of prior moves across page transitions.
 
 ## Layout
@@ -85,7 +88,7 @@ src/wikigame_agent/
   wiki_client.py   # async MediaWiki client (the JSONDecodeError fix lives here)
   game.py          # WikiGame, WikiGameRules
   tools.py         # get_content, move_page, check_path
-  prompts.py       # system / on-page / next-step / reason / act
+  prompts.py       # system / on-page / next-step / step
   agents.py        # basic_agent, react_agent, history_agent
   display.py       # Rich-based turn-by-turn console output
   cli.py           # `wikigame play ...`, `wikigame view`

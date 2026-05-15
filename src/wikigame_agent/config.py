@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
-    inspect_eval_model: str = Field(default="openai/gpt-4o-mini", alias="INSPECT_EVAL_MODEL")
+    inspect_eval_model: str = Field(default="openai/gpt-5.4-nano", alias="INSPECT_EVAL_MODEL")
     wikigame_user_agent: str = Field(
         default="wikigame-agent/0.1 (https://github.com/anthropics/claude-code)",
         alias="WIKIGAME_USER_AGENT",

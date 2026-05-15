@@ -40,6 +40,23 @@ def play(
     enable_check_path: Annotated[
         bool, typer.Option(help="Include the check_path dry-run tool.")
     ] = False,
+    reasoning_effort: Annotated[
+        str | None,
+        typer.Option(
+            help="Reasoning effort for o-series / gpt-5 models "
+            "(none|minimal|low|medium|high|xhigh|max). Ignored by non-reasoning models. "
+            "Defaults to medium because the gpt-5 family's own default is `minimal`, "
+            "which leaves react/history agents without enough reasoning to plan."
+        ),
+    ] = "medium",
+    proxy_reasoning: Annotated[
+        bool,
+        typer.Option(
+            help="(react/history only) Split each move turn into a separate "
+            "text-only reason call and an act call. Use this for models without "
+            "native reasoning (e.g. gpt-4o-mini) or with reasoning_effort=minimal."
+        ),
+    ] = False,
     log_dir: Annotated[
         str | None,
         typer.Option(help="Where to write inspect logs (default: ./logs)."),
@@ -65,6 +82,8 @@ def play(
             model=chosen_model,
             message_limit=message_limit,
             enable_check_path=enable_check_path,
+            reasoning_effort=reasoning_effort,
+            proxy_reasoning=proxy_reasoning,
             log_dir=chosen_log_dir,
         )
     )
@@ -78,6 +97,8 @@ async def _run(
     model: str,
     message_limit: int,
     enable_check_path: bool,
+    reasoning_effort: str | None,
+    proxy_reasoning: bool,
     log_dir: str,
 ) -> None:
     async with WikiClient(user_agent=settings.wikigame_user_agent) as client:
@@ -90,7 +111,10 @@ async def _run(
             tools.append(check_path(game))
 
         agent_factory = AGENTS[agent_name]
-        solver = as_solver(agent_factory(tools=tools, game=game))
+        factory_kwargs: dict = {"tools": tools, "game": game}
+        if agent_name in ("react", "history"):
+            factory_kwargs["proxy_reasoning"] = proxy_reasoning
+        solver = as_solver(agent_factory(**factory_kwargs))
 
         @task
         def wiki_task() -> Task:
@@ -99,6 +123,10 @@ async def _run(
                 message_limit=message_limit,
             )
 
+        eval_kwargs: dict = {}
+        if reasoning_effort is not None:
+            eval_kwargs["reasoning_effort"] = reasoning_effort
+
         # Stay on a single event loop so httpx sockets aren't orphaned when
         # inspect's loop tears down (caused "Event loop is closed" on exit).
         await eval_async(
@@ -106,6 +134,7 @@ async def _run(
             solver=solver,
             log_dir=log_dir,
             display="plain",
+            **eval_kwargs,
         )
 
         display.print_summary(game)
