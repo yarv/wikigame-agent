@@ -59,6 +59,24 @@ Since the project squash-merges, only the PR title matters; individual commits i
 - New dependencies.
 - Changes to the "agent only sees current page" rule — this is a deliberate fair-play design choice (see [README](README.md#design-notes)).
 
+## Maintainer notes
+
+### release-please PAT
+
+`.github/workflows/release-please.yml` uses a Personal Access Token (`RELEASE_PLEASE_TOKEN`) instead of the default `GITHUB_TOKEN`. This is so the release PRs it opens trigger CI — GitHub deliberately skips workflows on events caused by `GITHUB_TOKEN` to prevent recursion, which would otherwise leave release PRs unable to satisfy the required-status-check ruleset.
+
+To rotate or recreate the token:
+
+1. Go to https://github.com/settings/personal-access-tokens/new (fine-grained PAT).
+2. Repository access: **only** this repo.
+3. Permissions:
+   - **Contents:** Read and write
+   - **Pull requests:** Read and write
+4. Expiration: pick something you'll remember to rotate (a year is the max).
+5. Save as repo secret `RELEASE_PLEASE_TOKEN` (Settings → Secrets and variables → Actions).
+
+A GitHub App token works as a drop-in replacement (e.g. via `actions/create-github-app-token`) and is preferable if this project ever has multiple maintainers.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).
