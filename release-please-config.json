@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "wikigame-agent",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/wikigame_agent/__init__.py"
+        }
+      ]
+    }
+  },
+  "pull-request-title-pattern": "chore: release ${version}"
+}
