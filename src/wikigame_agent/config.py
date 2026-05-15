@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
     inspect_eval_model: str = Field(default="openai/gpt-5.4-nano", alias="INSPECT_EVAL_MODEL")
     wikigame_user_agent: str = Field(
-        default="wikigame-agent/0.1 (https://github.com/anthropics/claude-code)",
+        default="wikigame-agent (https://github.com/yarv/wikigame-agent)",
         alias="WIKIGAME_USER_AGENT",
     )
     wikigame_log_dir: Path = Field(default=Path("logs"), alias="WIKIGAME_LOG_DIR")
