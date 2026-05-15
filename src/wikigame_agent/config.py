@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     )
     wikigame_log_dir: Path = Field(default=Path("logs"), alias="WIKIGAME_LOG_DIR")
     wikigame_request_timeout: float = Field(default=30.0, alias="WIKIGAME_REQUEST_TIMEOUT")
+    wikigame_no_countries: bool = Field(default=False, alias="WIKIGAME_NO_COUNTRIES")
+    wikigame_no_cities: bool = Field(default=False, alias="WIKIGAME_NO_CITIES")
 
 
 settings = Settings()

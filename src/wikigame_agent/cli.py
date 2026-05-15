@@ -15,7 +15,7 @@ from inspect_ai.dataset import Sample
 from . import display
 from .agents import AGENTS, AgentName
 from .config import settings
-from .game import WikiGame
+from .game import Rule, WikiGameRules
 from .tools import check_path, get_content, move_page
 from .wiki_client import WikiClient
 
@@ -78,6 +78,20 @@ def play(
         str | None,
         typer.Option(help="Where to write inspect logs (default: ./logs)."),
     ] = None,
+    no_countries: Annotated[
+        bool | None,
+        typer.Option(
+            "--no-countries/--allow-countries",
+            help="Forbid moves onto country articles. Defaults to WIKIGAME_NO_COUNTRIES.",
+        ),
+    ] = None,
+    no_cities: Annotated[
+        bool | None,
+        typer.Option(
+            "--no-cities/--allow-cities",
+            help="Forbid moves onto city/town articles. Defaults to WIKIGAME_NO_CITIES.",
+        ),
+    ] = None,
     verbose: Annotated[bool, typer.Option("-v", "--verbose", help="DEBUG logging.")] = False,
 ) -> None:
     """Play the wiki game from START to GOAL."""
@@ -91,6 +105,12 @@ def play(
     chosen_log_dir = log_dir or str(settings.wikigame_log_dir)
     os.makedirs(chosen_log_dir, exist_ok=True)
 
+    rules: list[Rule] = []
+    if settings.wikigame_no_countries if no_countries is None else no_countries:
+        rules.append("no countries")
+    if settings.wikigame_no_cities if no_cities is None else no_cities:
+        rules.append("no cities")
+
     asyncio.run(
         _run(
             start=start,
@@ -102,6 +122,7 @@ def play(
             reasoning_effort=reasoning_effort,
             proxy_reasoning=proxy_reasoning,
             log_dir=chosen_log_dir,
+            rules=rules,
         )
     )
 
@@ -117,11 +138,12 @@ async def _run(
     reasoning_effort: str | None,
     proxy_reasoning: bool,
     log_dir: str,
+    rules: list[Rule],
 ) -> None:
     async with WikiClient(user_agent=settings.wikigame_user_agent) as client:
-        game = await WikiGame.create(client, start, goal)
+        game = await WikiGameRules.create(client, start, goal, rules=rules)
         display.attach(game)
-        display.print_banner(game, agent_name, model, message_limit)
+        display.print_banner(game, agent_name, model, message_limit, rules=rules)
 
         tools = [get_content(game), move_page(game)]
         if enable_check_path:

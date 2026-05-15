@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .game import WikiGame
+from .game import WikiGame, WikiGameRules
 
 SYSTEM_BASIC = (
     "You are a Wikipedia-racing AI. Your aim is to reach a goal page by "
@@ -24,6 +24,12 @@ def on_page(game: WikiGame) -> str:
         f"You are currently on page: {game.current_page.title!r}.",
         f"Your goal page is: {game.goal_page.title!r}.",
     ]
+    if isinstance(game, WikiGameRules) and game.rules:
+        parts.append(
+            "Rules in effect (moves violating these will be rejected): "
+            + "; ".join(game.rules)
+            + "."
+        )
     if len(game.page_history) > 1:
         parts.append("Path so far: " + " -> ".join(game.page_history))
     return "\n\n".join(parts)

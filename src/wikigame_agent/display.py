@@ -17,7 +17,13 @@ from .wiki_client import WikiPage
 console = Console()
 
 
-def print_banner(game: WikiGame, agent_name: str, model: str, message_limit: int) -> None:
+def print_banner(
+    game: WikiGame,
+    agent_name: str,
+    model: str,
+    message_limit: int,
+    rules: list[str] | None = None,
+) -> None:
     table = Table.grid(padding=(0, 2))
     table.add_column(style="dim")
     table.add_column()
@@ -26,6 +32,8 @@ def print_banner(game: WikiGame, agent_name: str, model: str, message_limit: int
     table.add_row("Agent", agent_name)
     table.add_row("Model", model)
     table.add_row("Message limit", str(message_limit))
+    if rules:
+        table.add_row("Rules", ", ".join(rules))
     console.print(Panel(table, title="Wiki Game", border_style="cyan"))
 
 
