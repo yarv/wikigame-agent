@@ -1,0 +1,76 @@
+name: publish
+
+# Build sdist + wheel and publish to PyPI (or TestPyPI).
+#
+# Triggers:
+#   - GitHub release published (release-please cuts these when its release PR
+#     is merged) — fires automatically against PyPI.
+#   - workflow_dispatch — manual run, lets you pick pypi or testpypi.
+#
+# Auth: PyPI Trusted Publishing via OIDC. No API token is stored.
+# The `pypi` / `testpypi` GitHub Environments gate every run behind a
+# "Review deployment" approval click, so this is admin-only in practice.
+#
+# One-time setup on the PyPI side (see CLAUDE.md → Maintainer ops).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        type: choice
+        options:
+          - pypi
+          - testpypi
+        default: pypi
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to ${{ inputs.target || 'pypi' }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target || 'pypi' }}
+    permissions:
+      id-token: write  # required for PyPI Trusted Publishing (OIDC)
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        if: ${{ github.event_name == 'release' || inputs.target == 'pypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish to TestPyPI
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
