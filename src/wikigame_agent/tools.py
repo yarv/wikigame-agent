@@ -8,19 +8,36 @@ from .game import WikiGame, WikiGameRules
 from .wiki_client import WikiClientError
 
 
-def _wrap_links(content: str, permitted_links: list[str]) -> str:
-    """Wrap the first occurrence of each permitted link in <link></link> tags.
+def _wrap_links(content: str, link_index: dict[str, list[str]]) -> str:
+    """Wrap the first occurrence of each display form in <link></link> tags.
 
     Sorted by length descending so multi-word titles wrap before any shorter
-    title contained within them ("United States" before "States")."""
-    for word in sorted(permitted_links, key=len, reverse=True):
+    title contained within them ("United States" before "States"). When a
+    display form maps to multiple disambiguated targets (or to a single
+    differently-named target like ``"Tangled" -> "Tangled (2010 film)"``),
+    the wrapped tag is followed by a parenthetical hint listing the actual
+    target page name(s) — agents must call ``move_page`` with one of those
+    exact titles to disambiguate."""
+    # Pass 1: wrap display forms.
+    for form in sorted(link_index.keys(), key=len, reverse=True):
         content = re.sub(
-            r"""(\s|[,.)!?;:'"])(""" + re.escape(word) + r""")(\s|[,.)!?;:'"s])""",
+            r"""(\s|[,.)!?;:'"])(""" + re.escape(form) + r""")(\s|[,.)!?;:'"s])""",
             r"\1<link>\2</link>\3",
             content,
             count=1,
             flags=re.IGNORECASE,
         )
+    # Pass 2: append disambiguation hints. Done separately so the hint text
+    # (which contains other titles) can't accidentally match a later wrap.
+    for form, targets in link_index.items():
+        if len(targets) > 1:
+            hint = f" (one of: {', '.join(targets)})"
+        elif targets[0].lower() != form.lower():
+            hint = f" (links to: {targets[0]})"
+        else:
+            continue
+        pattern = re.compile(r"<link>(" + re.escape(form) + r")</link>", flags=re.IGNORECASE)
+        content = pattern.sub(lambda m, h=hint: f"<link>{m.group(1)}</link>{h}", content, count=1)
     return content
 
 
@@ -30,13 +47,15 @@ def get_content(game: WikiGame) -> Tool:
         """Get the full content of the Wikipedia page you are currently on.
 
         Anything corresponding to a link you can follow is wrapped in
-        <link></link> tags.
+        <link></link> tags. When a link's display text could resolve to
+        multiple Wikipedia pages (e.g. "Mary Poppins" -> film vs. character),
+        the tag is followed by a parenthetical hint listing the candidates;
+        call move_page with the exact target title to disambiguate.
 
         Returns:
             The content of the current page with permitted links tagged.
         """
-        permitted = game.get_permitted_links()
-        return _wrap_links(game.current_page.content, permitted)
+        return _wrap_links(game.current_page.content, game.current_page.link_index())
 
     return execute
 
@@ -62,16 +81,25 @@ def move_page(game: WikiGame) -> Tool:
                 f"Move failed: {candidate!r} is the current page. Pick a "
                 f"different link to make progress."
             )
-        if not game.is_permitted_link(candidate):
+        resolution = game.current_page.resolve_link(candidate)
+        if resolution is None:
             return (
                 f"Move failed: {candidate!r} is not a permitted link from the "
                 f"current page ({game.current_page.title!r}). You can only move "
                 f"to pages wrapped in <link></link> tags in the content."
             )
+        if isinstance(resolution, list):
+            options = ", ".join(repr(t) for t in resolution)
+            return (
+                f"Move failed: {candidate!r} is ambiguous on this page — "
+                f"it could mean any of: {options}. Call move_page again with "
+                f"one of those exact titles."
+            )
+        target = resolution
         try:
-            new_page = await game._client.get_page(candidate)
+            new_page = await game._client.get_page(target)
         except WikiClientError as e:
-            return f"Move failed: could not load page {candidate!r}: {e}"
+            return f"Move failed: could not load page {target!r}: {e}"
 
         # MediaWiki redirects can resolve a differently-named link back to the
         # page the agent is already on. Without this check, every such move
@@ -88,7 +116,7 @@ def move_page(game: WikiGame) -> Tool:
             if violation:
                 return f"Move failed: {violation}"
 
-        await game.move_to(candidate)
+        await game.move_to(target)
         if game.check_win():
             return f"Move successful — you have reached the goal page {new_page.title!r}."
         return f"Move successful. You are now on {new_page.title!r}."
@@ -128,13 +156,19 @@ def check_path(game: WikiGame) -> Tool:
             return f"Could not load starting page {steps[0]!r}: {e}"
 
         for i, next_title in enumerate(steps[1:], start=1):
-            permitted = cursor.permitted_links()
-            if next_title.lower() not in {p.lower() for p in permitted}:
+            resolution = cursor.resolve_link(next_title)
+            if resolution is None:
                 return f"Path breaks at step {i}: {next_title!r} is not a link in {cursor.title!r}."
+            if isinstance(resolution, list):
+                options = ", ".join(repr(t) for t in resolution)
+                return (
+                    f"Path is ambiguous at step {i}: {next_title!r} on "
+                    f"{cursor.title!r} could mean any of: {options}."
+                )
             try:
-                cursor = await client.get_page(next_title)
+                cursor = await client.get_page(resolution)
             except WikiClientError as e:
-                return f"Could not load page {next_title!r} at step {i}: {e}"
+                return f"Could not load page {resolution!r} at step {i}: {e}"
 
             if cursor.title.lower() == game.goal_page.title.lower():
                 return (

@@ -62,8 +62,7 @@ class WikiGame:
         return self.current_page.permitted_links()
 
     def is_permitted_link(self, link: str) -> bool:
-        normalized = link.replace("_", " ").lower()
-        return normalized in {p.lower() for p in self.get_permitted_links()}
+        return self.current_page.resolve_link(link) is not None
 
     def check_win(self) -> bool:
         return self.current_page.title == self.goal_page.title
