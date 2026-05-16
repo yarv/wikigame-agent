@@ -1,6 +1,6 @@
 [project]
 name = "wikigame-agent"
-version = "0.6.0"
+version = "0.6.1"
 description = "Wiki Game LLM agent built on AISI Inspect."
 readme = "README.md"
 requires-python = ">=3.11"
