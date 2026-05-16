@@ -50,10 +50,17 @@ async def test_get_content_tool_returns_tagged(mock_wiki):
 
 
 async def test_move_page_tool_success_and_failure(mock_wiki):
+    # "Disallowed" appears in prop=links (e.g. a navbox-only target) but has
+    # no anchor in the article body — so it must not be a permitted move.
     mock_wiki.add_page(
         "Start",
         content="Start links to Allowed and nothing else.",
         links=["Allowed", "Disallowed"],
+        body_html=(
+            '<div class="mw-parser-output">'
+            '<p>Start links to <a href="/wiki/Allowed">Allowed</a> and nothing else.</p>'
+            "</div>"
+        ),
     )
     mock_wiki.add_page("Allowed", content="Allowed.", links=[])
     mock_wiki.add_page("Disallowed", content="Disallowed.", links=[])
@@ -120,6 +127,11 @@ async def test_move_page_resolves_bare_form_to_disambiguated_target(mock_wiki):
         "Saving Mr. Banks",
         content="The film Mary Poppins premiered in 1964.",
         links=["Mary Poppins (film)"],
+        body_html=(
+            '<div class="mw-parser-output">'
+            '<p>The film <a href="/wiki/Mary_Poppins_(film)">Mary Poppins</a> '
+            "premiered in 1964.</p></div>"
+        ),
     )
     mock_wiki.add_page("Mary Poppins (film)", content="The 1964 film.", links=[])
     async with WikiClient(user_agent="t") as client:
@@ -151,6 +163,12 @@ async def test_move_page_rejects_ambiguous_bare_click(mock_wiki):
         "Saving Mr. Banks",
         content="The film Mary Poppins premiered in 1964.",
         links=["Mary Poppins (film)", "Mary Poppins (character)"],
+        body_html=(
+            '<div class="mw-parser-output">'
+            '<p>The film <a href="/wiki/Mary_Poppins_(film)">Mary Poppins</a> and '
+            '<a href="/wiki/Mary_Poppins_(character)">Mary Poppins</a> the character.</p>'
+            "</div>"
+        ),
     )
     mock_wiki.add_page("Mary Poppins (film)", content="The 1964 film.", links=[])
     mock_wiki.add_page("Mary Poppins (character)", content="The character.", links=[])

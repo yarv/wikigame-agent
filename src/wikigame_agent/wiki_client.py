@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import json
 import logging
-import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from html.parser import HTMLParser
+from urllib.parse import unquote
 
 import httpx
 from tenacity import (
@@ -46,12 +47,176 @@ class WikiNonJSONResponse(WikiClientError):
     rate-limit or error page). Retried by the client."""
 
 
-_DISAMBIGUATOR_RE = re.compile(r"\s*\([^)]+\)\s*$")
+# Wikipedia namespace prefixes that are NOT article-namespace (ns=0). Anchors
+# whose target starts with one of these (case-insensitive) followed by ':' are
+# meta/chrome links the human game player cannot follow as a move.
+_NON_ARTICLE_NAMESPACES = frozenset(
+    p.lower()
+    for p in (
+        "File",
+        "Image",
+        "Media",
+        "Special",
+        "Category",
+        "Template",
+        "Help",
+        "Wikipedia",
+        "Project",
+        "Portal",
+        "Book",
+        "Draft",
+        "User",
+        "MediaWiki",
+        "Module",
+        "TimedText",
+        "Talk",
+        "User talk",
+        "Wikipedia talk",
+        "File talk",
+        "Image talk",
+        "Template talk",
+        "Help talk",
+        "Category talk",
+        "Portal talk",
+        "Book talk",
+        "Draft talk",
+        "MediaWiki talk",
+        "Module talk",
+        "TimedText talk",
+    )
+)
+
+# CSS class names whose subtrees are chrome — links inside them are visible
+# to a human reader but conceptually outside the article body proper, so we
+# don't admit them as game moves. We also prefix-match these (e.g.
+# `infobox-vcard`).
+_CHROME_CLASSES = frozenset(
+    (
+        "infobox",
+        "navbox",
+        "sidebar",
+        "hatnote",
+        "reference",
+        "references",
+        "mw-references-wrap",
+        "thumbcaption",
+        "gallery",
+        "metadata",
+        "mbox-text",
+        "ambox",
+        "mw-editsection",
+        "noprint",
+        "shortdescription",
+    )
+)
 
 
-def _strip_disambiguator(title: str) -> str:
-    """`"Mary Poppins (film)"` -> `"Mary Poppins"`."""
-    return _DISAMBIGUATOR_RE.sub("", title).strip()
+def _has_chrome_class(attrs: list[tuple[str, str | None]]) -> bool:
+    for name, value in attrs:
+        if name == "class" and value:
+            classes = value.split()
+            for c in classes:
+                if c in _CHROME_CLASSES:
+                    return True
+                for prefix in _CHROME_CLASSES:
+                    if c.startswith(prefix + "-"):
+                        return True
+        elif name == "role" and value == "navigation":
+            return True
+    return False
+
+
+def _parse_wiki_href(href: str | None) -> str | None:
+    """Return the target page title for an internal article link, else None.
+
+    Accepts only `/wiki/<Title>` hrefs in the article namespace. Strips
+    fragments and query strings, decodes percent-escapes, and normalizes
+    underscores to spaces. Rejects external URLs, fragment-only links,
+    and non-article namespaces.
+    """
+    if not href or not href.startswith("/wiki/"):
+        return None
+    path = href[len("/wiki/") :]
+    path = path.split("#", 1)[0].split("?", 1)[0]
+    if not path:
+        return None
+    try:
+        title = unquote(path).replace("_", " ")
+    except UnicodeDecodeError:
+        return None
+    colon_idx = title.find(":")
+    if colon_idx > 0:
+        prefix = title[:colon_idx].lower()
+        if prefix in _NON_ARTICLE_NAMESPACES:
+            return None
+    return title
+
+
+class _BodyLinkExtractor(HTMLParser):
+    """Collect anchor `(display_label, target_title)` pairs from article HTML.
+
+    Skips anchors whose `href` is not a local `/wiki/X` article link, and
+    anchors that appear nested anywhere inside an element whose class list
+    matches `_CHROME_CLASSES`. The display label is the anchor's rendered
+    text content, with whitespace collapsed.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.anchors: list[tuple[str, str]] = []
+        self._chrome_depth = 0
+        self._tag_stack: list[tuple[str, bool]] = []
+        self._anchor_target: str | None = None
+        self._anchor_text_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        is_chrome = _has_chrome_class(attrs)
+        if is_chrome:
+            self._chrome_depth += 1
+        self._tag_stack.append((tag, is_chrome))
+        if tag == "a" and self._chrome_depth == 0 and self._anchor_target is None:
+            href = next((v for n, v in attrs if n == "href"), None)
+            target = _parse_wiki_href(href)
+            if target is not None:
+                self._anchor_target = target
+                self._anchor_text_parts = []
+
+    def handle_endtag(self, tag: str) -> None:
+        for i in range(len(self._tag_stack) - 1, -1, -1):
+            if self._tag_stack[i][0] == tag:
+                _, was_chrome = self._tag_stack.pop(i)
+                if was_chrome:
+                    self._chrome_depth -= 1
+                break
+        if tag == "a" and self._anchor_target is not None:
+            label = " ".join("".join(self._anchor_text_parts).split())
+            if label:
+                self.anchors.append((label, self._anchor_target))
+            self._anchor_target = None
+            self._anchor_text_parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self._anchor_target is not None and self._chrome_depth == 0:
+            self._anchor_text_parts.append(data)
+
+
+def _build_link_index_from_html(body_html: str, self_title: str) -> dict[str, list[str]]:
+    """Display form -> list of target page titles, derived from body anchors.
+
+    Self-links and duplicate targets within a bucket are filtered.
+    """
+    parser = _BodyLinkExtractor()
+    parser.feed(body_html)
+    parser.close()
+    index: dict[str, list[str]] = {}
+    self_lower = self_title.lower()
+    for label, target in parser.anchors:
+        if target.lower() == self_lower:
+            continue
+        bucket = index.setdefault(label, [])
+        if target not in bucket:
+            bucket.append(target)
+    return index
 
 
 @dataclass(frozen=True)
@@ -61,41 +226,26 @@ class WikiPage:
     content: str
     summary: str
     links: tuple[str, ...]
+    body_html: str = ""
+    _link_index: dict[str, list[str]] = field(default_factory=dict)
 
     def link_index(self) -> dict[str, list[str]]:
         """Display form -> list of target page titles, for body-visible links.
 
-        Mirrors the original notebook's "main content" heuristic, with two
-        extensions: (1) a link whose target has a parenthetical disambiguator
-        (e.g. ``"Mary Poppins (film)"``) is included if the bare form
-        (``"Mary Poppins"``) appears in the body — Wikipedia's plain-text
-        extract renders the display text, not the wikitext target; (2) a
-        single bare display form may map to multiple disambiguated targets
-        (``"Mary Poppins" -> ["Mary Poppins (film)", "Mary Poppins (character)"]``),
-        and the caller decides how to surface the ambiguity. Self-links are
-        excluded.
+        The set of admissible moves is the set of `<a href="/wiki/X">label</a>`
+        anchors in the article body HTML, excluding anchors nested inside
+        chrome (infobox, navbox, sidebar, hatnote, references, image
+        captions, etc.) and non-article namespaces (File:, Category:,
+        Template:, ...). The bucket value is the list of disambiguated
+        targets a bare display form can resolve to (Wikipedia editors use
+        the pipe-trick to render "Mary Poppins" while linking to
+        "Mary Poppins (film)"); the caller surfaces the ambiguity.
         """
-        content_lower = self.content.lower()
-        title_lower = self.title.lower()
-        index: dict[str, list[str]] = {}
-        for link in self.links:
-            if link.lower() == title_lower:
-                continue
-            forms: list[str] = []
-            if link.lower() in content_lower:
-                forms.append(link)
-            bare = _strip_disambiguator(link)
-            if bare and bare.lower() != link.lower() and bare.lower() in content_lower:
-                forms.append(bare)
-            for form in forms:
-                bucket = index.setdefault(form, [])
-                if link not in bucket:
-                    bucket.append(link)
-        return index
+        return self._link_index
 
     def permitted_links(self) -> list[str]:
         """Display forms agents can click. See :meth:`link_index`."""
-        return list(self.link_index().keys())
+        return list(self._link_index.keys())
 
     def resolve_link(self, candidate: str) -> str | list[str] | None:
         """Map a click candidate to the target page title to fetch.
@@ -112,13 +262,10 @@ class WikiPage:
         target names, and the agent will click those directly.
         """
         normalized = candidate.replace("_", " ").lower()
-        index = self.link_index()
-        # Direct hit on a body-visible display form.
-        for form, targets in index.items():
+        for form, targets in self._link_index.items():
             if form.lower() == normalized:
                 return targets[0] if len(targets) == 1 else list(targets)
-        # Hit on a disambiguated target listed inline alongside a bare form.
-        for targets in index.values():
+        for targets in self._link_index.values():
             for target in targets:
                 if target.lower() == normalized:
                     return target
@@ -236,14 +383,44 @@ class WikiClient:
             logger.info("Resolving disambiguation %r -> %r", title, all_links[0])
             return await self._fetch_page(all_links[0])
 
+        canonical_title = page_info["title"]
+        body_html = await self._fetch_body_html(canonical_title)
         content = page_info.get("extract", "")
         return WikiPage(
-            title=page_info["title"],
+            title=canonical_title,
             url=page_info.get("fullurl", ""),
             content=content,
             summary=_make_summary(content),
             links=tuple(all_links),
+            body_html=body_html,
+            _link_index=_build_link_index_from_html(body_html, canonical_title),
         )
+
+    async def _fetch_body_html(self, title: str) -> str:
+        """Fetch the rendered article body HTML via action=parse.
+
+        This is the same HTML Wikipedia would serve to a human reader. The
+        link-set the agent is allowed to click is derived from anchors in
+        this HTML, not from `prop=links` (which over-permits links visible
+        only in infoboxes, navboxes, references and other chrome).
+        """
+        data = await self._request(
+            {
+                "action": "parse",
+                "page": title,
+                "prop": "text",
+                "redirects": "1",
+                "disableeditsection": "1",
+                "disabletoc": "1",
+            }
+        )
+        parse = data.get("parse")
+        if not parse:
+            return ""
+        text = parse.get("text", "")
+        if isinstance(text, dict):
+            text = text.get("*", "")
+        return text or ""
 
     async def _suggest(self, query: str) -> str | None:
         """Use OpenSearch to fall back to a near-match title."""
