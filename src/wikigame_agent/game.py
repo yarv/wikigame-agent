@@ -5,7 +5,7 @@ from typing import Literal
 
 from .wiki_client import WikiClient, WikiPage
 
-Rule = Literal["no countries", "no cities", "no pages with length above 30000"]
+Rule = Literal["no countries", "no cities"]
 
 MoveListener = Callable[["WikiGame", WikiPage, WikiPage], Awaitable[None] | None]
 
@@ -24,7 +24,7 @@ class WikiGame:
         starting_page: WikiPage,
         goal_page: WikiPage,
     ):
-        self._client = client
+        self.client = client
         self.starting_page = starting_page
         self.goal_page = goal_page
         self.current_page = starting_page
@@ -49,7 +49,7 @@ class WikiGame:
         """Move to a permitted link. Caller must verify with `is_permitted_link`
         first; this method assumes the move is legal."""
         previous = self.current_page
-        new_page = await self._client.get_page(title)
+        new_page = await self.client.get_page(title)
         self.current_page = new_page
         self.page_history.append(new_page.title)
         for listener in self._move_listeners:
@@ -89,9 +89,8 @@ class WikiGameRules(WikiGame):
         goal_page: str,
         rules: list[Rule] | None = None,
     ) -> WikiGameRules:
-        start = await client.get_page(starting_page)
-        goal = await client.get_page(goal_page)
-        return cls(client, start, goal, rules)
+        base = await WikiGame.create(client, starting_page, goal_page)
+        return cls(base.client, base.starting_page, base.goal_page, rules)
 
     def violates_rules(self, page: WikiPage) -> str | None:
         """Return a human-readable reason if visiting `page` would violate
@@ -100,8 +99,6 @@ class WikiGameRules(WikiGame):
             return "rule violation: target page appears to be a country article"
         if "no cities" in self.rules and _is_city(page):
             return "rule violation: target page appears to be a city article"
-        if "no pages with length above 30000" in self.rules and len(page.content) > 30000:
-            return f"rule violation: target page is too long ({len(page.content)} > 30000 chars)"
         return None
 
 

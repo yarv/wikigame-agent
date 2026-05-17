@@ -43,7 +43,7 @@ def print_banner(
 def attach(game: WikiGame) -> None:
     """Wire `print_move` to fire on every successful move."""
 
-    def on_move(game: WikiGame, previous: WikiPage, current: WikiPage) -> None:
+    def on_move(_game: WikiGame, previous: WikiPage, current: WikiPage) -> None:
         print_move(game, previous, current)
 
     game.add_move_listener(on_move)

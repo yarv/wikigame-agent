@@ -28,7 +28,7 @@ from inspect_ai.model import (
 from inspect_ai.tool import Tool, ToolChoice, ToolDef, ToolFunction
 
 from . import prompts
-from .game import WikiGame
+from .game import WikiGame, WikiGameRules
 
 AgentName = Literal["basic", "react", "history"]
 
@@ -37,7 +37,8 @@ _GET_CONTENT = "get_content"
 
 
 def _on_page_user(game: WikiGame) -> ChatMessageUser:
-    return ChatMessageUser(content=prompts.on_page(game))
+    rules = game.rules if isinstance(game, WikiGameRules) else None
+    return ChatMessageUser(content=prompts.on_page(game, rules=rules))
 
 
 async def _run_tool_calls(state: AgentState, tools: list[Tool]) -> AgentState:

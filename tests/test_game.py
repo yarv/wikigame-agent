@@ -65,7 +65,7 @@ async def test_on_page_surfaces_active_rules(mock_wiki):
         ruled = await WikiGameRules.create(
             client, "Start", "Goal", rules=["no countries", "no cities"]
         )
-        text = on_page(ruled)
+        text = on_page(ruled, rules=ruled.rules)
         assert "Rules in effect" in text
         assert "no countries" in text
         assert "no cities" in text
