@@ -22,19 +22,20 @@ console = Console()
 
 def print_banner(
     game: WikiGame,
-    agent_name: str,
     model: str,
     message_limit: int,
     turn_limit: int | None = None,
     rules: list[str] | None = None,
+    notes: bool = False,
 ) -> None:
     table = Table.grid(padding=(0, 2))
     table.add_column(style="dim")
     table.add_column()
     table.add_row("Start", Text(game.starting_page.title, style="bold"))
     table.add_row("Goal", Text(game.goal_page.title, style="bold"))
-    table.add_row("Agent", agent_name)
     table.add_row("Model", model)
+    if notes:
+        table.add_row("Notes", "on")
     if turn_limit is not None:
         table.add_row("Turn limit", str(turn_limit))
     table.add_row("Message limit", str(message_limit))

@@ -4,13 +4,17 @@ from wikigame_agent.cli import _slug, _task_name
 
 
 def test_task_name_simple():
-    assert _task_name("react", "Apple", "Banana") == "react_Apple_to_Banana"
+    assert _task_name("Apple", "Banana", notes=False) == "Apple_to_Banana"
+
+
+def test_task_name_with_notes_prefix():
+    assert _task_name("Apple", "Banana", notes=True) == "notes_Apple_to_Banana"
 
 
 def test_task_name_handles_spaces_and_punctuation():
     # Wikipedia titles can contain spaces, commas, parens, ampersands, etc.
-    name = _task_name("history", "United States", "Coca-Cola (drink)")
-    assert name == "history_United-States_to_Coca-Cola-drink"
+    name = _task_name("United States", "Coca-Cola (drink)", notes=False)
+    assert name == "United-States_to_Coca-Cola-drink"
 
 
 def test_slug_truncates_overly_long_titles():

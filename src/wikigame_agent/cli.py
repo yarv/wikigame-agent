@@ -13,7 +13,7 @@ from inspect_ai.agent import as_solver
 from inspect_ai.dataset import Sample
 
 from . import display
-from .agents import AGENTS, AgentName
+from .agents import wiki_agent
 from .config import settings
 from .game import Rule, WikiGameRules
 from .pricing import register_prices
@@ -37,16 +37,26 @@ def _slug(text: str) -> str:
     return cleaned or "untitled"
 
 
-def _task_name(agent_name: str, start: str, goal: str) -> str:
-    """Inspect task name used to label log files: `<agent>_<start>_to_<goal>`."""
-    return f"{agent_name}_{_slug(start)}_to_{_slug(goal)}"
+def _task_name(start: str, goal: str, *, notes: bool) -> str:
+    """Inspect task name used to label log files. Prefixed with `notes_` when
+    note carry-over is enabled, so runs are distinguishable in `wikigame view`."""
+    prefix = "notes_" if notes else ""
+    return f"{prefix}{_slug(start)}_to_{_slug(goal)}"
 
 
 @app.command()
 def play(
     start: Annotated[str, typer.Argument(help="Starting Wikipedia page title.")],
     goal: Annotated[str, typer.Argument(help="Goal Wikipedia page title.")],
-    agent: Annotated[AgentName, typer.Option(help="Agent strategy.")] = "react",
+    notes: Annotated[
+        bool,
+        typer.Option(
+            "--notes/--no-notes",
+            help="Carry a compact textual record of each prior move's reasoning "
+            "forward across page transitions, so the model can see *why* it "
+            "picked each prior page rather than just where it ended up.",
+        ),
+    ] = False,
     model: Annotated[
         str | None,
         typer.Option(
@@ -58,8 +68,8 @@ def play(
         typer.Option(
             help="Max number of moves the agent may make before the loop aborts "
             "with reason 'turn_limit'. Counted at the game layer so it means the "
-            "same thing across agents (react/history burn different numbers of "
-            "messages per move)."
+            "same thing across runs (each move spends a different number of "
+            "messages depending on whether --notes is on)."
         ),
     ] = 40,
     message_limit: Annotated[
@@ -78,7 +88,7 @@ def play(
             help="Reasoning effort for o-series / gpt-5 models "
             "(none|minimal|low|medium|high|xhigh|max). Ignored by non-reasoning models. "
             "Defaults to medium because the gpt-5 family's own default is `minimal`, "
-            "which leaves react/history agents without enough reasoning to plan."
+            "which leaves the agent without enough reasoning to plan."
         ),
     ] = "medium",
     proxy_reasoning: Annotated[
@@ -130,7 +140,7 @@ def play(
         _run(
             start=start,
             goal=goal,
-            agent_name=agent,
+            notes=notes,
             model=chosen_model,
             turn_limit=turn_limit,
             message_limit=message_limit,
@@ -147,7 +157,7 @@ async def _run(
     *,
     start: str,
     goal: str,
-    agent_name: AgentName,
+    notes: bool,
     model: str,
     turn_limit: int,
     message_limit: int,
@@ -161,17 +171,18 @@ async def _run(
         game = await WikiGameRules.create(client, start, goal, rules=rules, turn_limit=turn_limit)
         display.attach(game)
         display.print_banner(
-            game, agent_name, model, message_limit, turn_limit=turn_limit, rules=rules
+            game, model, message_limit, turn_limit=turn_limit, rules=rules, notes=notes
         )
 
         tools = [get_content(game), move_page(game)]
         if enable_check_path:
             tools.append(check_path(game))
 
-        agent_factory = AGENTS[agent_name]
-        solver = as_solver(agent_factory(tools=tools, game=game, proxy_reasoning=proxy_reasoning))
+        solver = as_solver(
+            wiki_agent(tools=tools, game=game, keep_notes=notes, proxy_reasoning=proxy_reasoning)
+        )
 
-        run_name = _task_name(agent_name, start, goal)
+        run_name = _task_name(start, goal, notes=notes)
 
         @task
         def wiki_task() -> Task:

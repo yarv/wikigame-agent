@@ -9,7 +9,7 @@ An LLM agent that plays the [Wikipedia game/Wikiracing](https://en.wikipedia.org
 This started as a port of the Chapter 3.4 LLM Agents exercise from [ARENA 3.0](https://github.com/callummcdougall/ARENA_3.0) into a self-contained project. The notable changes over the original notebook:
 
 - A custom MediaWiki client with a real User-Agent, exponential backoff retries, and a clear error when the API returns non-JSON. This eliminates the `JSONDecodeError`s that came from Wikipedia silently rate-limiting the `wikipedia` PyPI package.
-- Two agent strategies (`react`, `history`) selectable from the CLI.
+- A single agent loop with an opt-in `--notes` mode for carrying reasoning forward across moves.
 - `tools.py` with `get_content`, `move_page`, and `check_path` (the last one was unimplemented in the notebook).
 - A Rich-based per-turn console display so you can watch the game without spinning up the Inspect log viewer.
 
@@ -29,11 +29,11 @@ uv run wikigame play "Canada" "Monty Python" \
 
 Options:
 
-- `--agent {react,history}` — default `react`
+- `--notes` — carry a compact textual record of each prior move's reasoning forward across page transitions. Default off; useful on long-form races where the model otherwise re-explores ideas it has already considered.
 - `--model openai/gpt-5.4-nano` — overrides `INSPECT_EVAL_MODEL`
-- `--reasoning-effort {none|minimal|low|medium|high|xhigh|max}` — for o-series and gpt-5 models. The `react`/`history` agents rely on the model reasoning before each move; on a reasoning model that means setting this to at least `low`. On the OpenAI gpt-5 family the default is `minimal`, which produces no useful reasoning and the agent will flounder.
+- `--reasoning-effort {none|minimal|low|medium|high|xhigh|max}` — for o-series and gpt-5 models. The agent relies on the model reasoning before each move; on a reasoning model that means setting this to at least `low`. On the OpenAI gpt-5 family the default is `minimal`, which produces no useful reasoning and the agent will flounder.
 - `--proxy-reasoning` — for models without native reasoning (e.g. `gpt-4o-mini`) or with reasoning effort set to `minimal`. Splits each move turn into a separate text-only reason call (forced `tool_choice="none"`) followed by an act call, so the model's CoT shows up in plain text. Roughly doubles per-move model calls, so prefer a reasoning model when possible.
-- `--turn-limit 40` — max number of moves the agent may make before the run aborts with reason `turn_limit`. Counted at the game layer, so it means the same thing across `react`/`history` (which spend different numbers of messages per move). The agent also auto-detects tight cycles (A↔B oscillation, A→B→C→A): on the first detection it gets a one-shot nudge, on the second it stops with reason `cycle`.
+- `--turn-limit 40` — max number of moves the agent may make before the run aborts with reason `turn_limit`, counted at the game layer. The agent also auto-detects tight cycles (A↔B oscillation, A→B→C→A): on the first detection it gets a one-shot nudge, on the second it stops with reason `cycle`.
 - `--message-limit 240` — hard backstop on Inspect message count; default is set high enough that `--turn-limit` fires first.
 - `--enable-check-path` — adds the `check_path` dry-run tool
 - `-v` — debug logging
@@ -76,10 +76,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, includ
 
 **Self-contained MediaWiki client.** The popular `wikipedia` PyPI package is unmaintained and crashes with `JSONDecodeError` when Wikipedia rate-limits it (it tries to parse the HTML error page as JSON). [`wiki_client.py`](src/wikigame_agent/wiki_client.py) sets a real User-Agent, retries transient failures, raises a clear error on non-JSON responses, and caches pages in-process.
 
-**Two agents.**
-
-- `react` (default): one model call per turn, alternating a forced `get_content` on each new page with a `move_page` call (reasoning text and the tool call come back in one response). Use `--proxy-reasoning` to split the move turn into a separate reason + act pair for models without native reasoning.
-- `history`: ReAct + carries a compact text record of prior moves across page transitions, so the model can see *why* it picked each prior page rather than just where it ended up.
+**One agent loop, two modes.** The agent makes one model call per turn, alternating a forced `get_content` on each new page with a `move_page` call (reasoning text and the tool call come back in one response). On a successful move the message history is rebuilt from scratch. Use `--proxy-reasoning` to split the move turn into a separate reason + act pair for models without native reasoning. Use `--notes` to additionally carry a compact textual record of each prior move's reasoning across transitions, so the model can see *why* it picked each prior page rather than just where it ended up.
 
 ## Layout
 
@@ -89,7 +86,7 @@ src/wikigame_agent/
   game.py          # WikiGame, WikiGameRules
   tools.py         # get_content, move_page, check_path
   prompts.py       # system / on-page / next-step / step
-  agents.py        # react_agent, history_agent
+  agents.py        # wiki_agent (the single agent loop)
   display.py       # Rich-based turn-by-turn console output
   cli.py           # `wikigame play ...`, `wikigame view`
   config.py        # pydantic-settings, reads .env
