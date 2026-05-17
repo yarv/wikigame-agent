@@ -1,10 +1,7 @@
 """Wiki-game agents.
 
-Three variants of increasing sophistication:
+Two variants:
 
-- `basic_agent`: tool-call loop, resets message history on every successful move
-  to keep the context window from growing without bound (the notebook's
-  baseline `WikiAgent`).
 - `react_agent`: one model call per turn, alternating a forced `get_content`
   on each new page with a `move_page` call (reasoning + tool call in a single
   response). With `proxy_reasoning=True` the move turn splits into a separate
@@ -30,7 +27,7 @@ from inspect_ai.tool import Tool, ToolChoice, ToolDef, ToolFunction
 from . import prompts
 from .game import WikiGame, WikiGameRules
 
-AgentName = Literal["basic", "react", "history"]
+AgentName = Literal["react", "history"]
 
 _Mode = Literal["fetch", "move"]
 _GET_CONTENT = "get_content"
@@ -157,42 +154,6 @@ async def _do_move_turn(state: AgentState, move_tools: list[Tool], *, proxy_reas
 
 
 @agent
-def basic_agent(tools: list[Tool], game: WikiGame) -> Agent:
-    """Baseline: think → act → if moved, reset history; loop until win."""
-
-    def system() -> ChatMessageSystem:
-        return ChatMessageSystem(content=prompts.SYSTEM_BASIC)
-
-    async def execute(state: AgentState) -> AgentState:
-        state.messages = [system(), _on_page_user(game)]
-        cycle_strikes = 0
-        pending_nudge: str | None = None
-        while not game.check_win():
-            if game.turn_limit_reached():
-                game.termination_reason = "turn_limit"
-                break
-            if pending_nudge is not None:
-                state.messages.append(ChatMessageUser(content=pending_nudge))
-                pending_nudge = None
-            state.messages.append(ChatMessageUser(content=prompts.NEXT_STEP))
-            state.output = await get_model().generate(input=state.messages, tools=tools)
-            state.messages.append(state.output.message)
-            if state.output.message.tool_calls:
-                state = await _run_tool_calls(state, tools)
-                if _last_tool_was_successful_move(state):
-                    state.messages = [system(), _on_page_user(game)]
-                    if _detected_cycle(game.page_history):
-                        cycle_strikes += 1
-                        if cycle_strikes >= 2:
-                            game.termination_reason = "cycle"
-                            break
-                        pending_nudge = prompts.cycle_nudge(_cycle_pages(game.page_history))
-        return state
-
-    return execute
-
-
-@agent
 def react_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = False) -> Agent:
     """ReAct with a forced fetch-then-move alternation."""
 
@@ -300,7 +261,6 @@ def _truncate(s: str, max_len: int) -> str:
 
 
 AGENTS: dict[AgentName, Agent] = {
-    "basic": basic_agent,
     "react": react_agent,
     "history": history_agent,
 }

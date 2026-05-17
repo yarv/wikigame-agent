@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from .game import WikiGame
 
-SYSTEM_BASIC = (
-    "You are a Wikipedia-racing AI. Your aim is to reach a goal page by "
-    "following links from a series of Wikipedia pages."
-)
-
 SYSTEM_REACT = (
     "You are a Wikipedia-racing AI. Your goal is to reach a target page by "
     "following links from Wikipedia pages.\n\n"
@@ -32,8 +27,6 @@ def on_page(game: WikiGame, rules: list[str] | None = None) -> str:
         parts.append("Path so far: " + " -> ".join(game.page_history))
     return "\n\n".join(parts)
 
-
-NEXT_STEP = "What will you do next?"
 
 STEP_PROMPT = "Think step by step about your next move, then act."
 
