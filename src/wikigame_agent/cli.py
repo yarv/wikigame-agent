@@ -53,9 +53,22 @@ def play(
             help="Inspect model id (e.g. 'openai/gpt-4o-mini'); overrides INSPECT_EVAL_MODEL."
         ),
     ] = None,
+    turn_limit: Annotated[
+        int,
+        typer.Option(
+            help="Max number of moves the agent may make before the loop aborts "
+            "with reason 'turn_limit'. Counted at the game layer so it means the "
+            "same thing across agents (basic/react/history burn different numbers "
+            "of messages per move)."
+        ),
+    ] = 40,
     message_limit: Annotated[
-        int, typer.Option(help="Max messages before inspect aborts the run.")
-    ] = 80,
+        int,
+        typer.Option(
+            help="Hard backstop on messages before inspect aborts the run. Kept "
+            "high relative to --turn-limit so the turn-based limit fires first."
+        ),
+    ] = 240,
     enable_check_path: Annotated[
         bool, typer.Option(help="Include the check_path dry-run tool.")
     ] = False,
@@ -119,6 +132,7 @@ def play(
             goal=goal,
             agent_name=agent,
             model=chosen_model,
+            turn_limit=turn_limit,
             message_limit=message_limit,
             enable_check_path=enable_check_path,
             reasoning_effort=reasoning_effort,
@@ -135,6 +149,7 @@ async def _run(
     goal: str,
     agent_name: AgentName,
     model: str,
+    turn_limit: int,
     message_limit: int,
     enable_check_path: bool,
     reasoning_effort: str | None,
@@ -143,9 +158,11 @@ async def _run(
     rules: list[Rule],
 ) -> None:
     async with WikiClient(user_agent=settings.wikigame_user_agent) as client:
-        game = await WikiGameRules.create(client, start, goal, rules=rules)
+        game = await WikiGameRules.create(client, start, goal, rules=rules, turn_limit=turn_limit)
         display.attach(game)
-        display.print_banner(game, agent_name, model, message_limit, rules=rules)
+        display.print_banner(
+            game, agent_name, model, message_limit, turn_limit=turn_limit, rules=rules
+        )
 
         tools = [get_content(game), move_page(game)]
         if enable_check_path:

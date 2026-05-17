@@ -11,9 +11,15 @@ from wikigame_agent.wiki_client import WikiPage
 
 
 class _FakeGame:
-    def __init__(self) -> None:
-        self.page_history = ["Start", "Mid", "Goal"]
-        self.goal_page = WikiPage(title="Goal", url="", content="", summary="", links=())
+    def __init__(
+        self,
+        page_history: list[str] | None = None,
+        goal: str = "Goal",
+        termination_reason: str | None = None,
+    ) -> None:
+        self.page_history = page_history or ["Start", "Mid", "Goal"]
+        self.goal_page = WikiPage(title=goal, url="", content="", summary="", links=())
+        self.termination_reason = termination_reason
 
     def check_win(self) -> bool:
         return self.page_history[-1] == self.goal_page.title
@@ -75,3 +81,41 @@ def test_summary_shows_em_dash_when_cost_unknown():
     out = _capture_summary(_FakeGame(), usage=usage)
     assert "—" in out
     assert "not in pricing data" in out
+
+
+def test_summary_title_for_won_game_is_goal_reached():
+    out = _capture_summary(_FakeGame(termination_reason="reached_goal"))
+    assert "Goal reached" in out
+
+
+def test_summary_title_for_turn_limit():
+    game = _FakeGame(
+        page_history=["Start", "A", "B", "C", "D"],
+        goal="Goal",
+        termination_reason="turn_limit",
+    )
+    out = _capture_summary(game)
+    assert "Stopped: turn limit" in out
+    assert "Reason: turn limit reached" in out
+
+
+def test_summary_title_for_cycle():
+    game = _FakeGame(
+        page_history=["Start", "A", "B", "A", "B"],
+        goal="Goal",
+        termination_reason="cycle",
+    )
+    out = _capture_summary(game)
+    assert "Stopped: cycle detected" in out
+    assert "cycle detected" in out
+    assert "A" in out and "B" in out
+
+
+def test_summary_title_falls_back_when_reason_missing():
+    game = _FakeGame(
+        page_history=["Start", "X"],
+        goal="Goal",
+        termination_reason=None,
+    )
+    out = _capture_summary(game)
+    assert "Game ended without reaching goal" in out

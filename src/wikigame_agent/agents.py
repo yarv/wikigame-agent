@@ -57,6 +57,39 @@ def _last_tool_was_successful_move(state: AgentState) -> bool:
     return False
 
 
+def _detected_cycle(page_history: list[str]) -> bool:
+    """Return True if the tail of `page_history` forms a tight repeating loop.
+
+    Catches the two traps we've seen in practice:
+
+    - **A ↔ B oscillation** — the last 4 entries are `[A, B, A, B]`.
+    - **A → B → C → A short cycle** — the last 4 entries return to a recent
+      page (`[A, B, C, A]` with B and C both distinct from A).
+
+    Anything longer than that is left to the message/turn budget. Old repeats
+    in the middle of the path don't trigger — we only look at the tail.
+    """
+    n = len(page_history)
+    if n < 4:
+        return False
+    a, b, c, d = page_history[-4], page_history[-3], page_history[-2], page_history[-1]
+    # A ↔ B oscillation.
+    if a == c and b == d and a != b:
+        return True
+    # A → B → C → A short cycle (returns to a page from 3 moves ago).
+    return a == d and b != a and c != a and b != c
+
+
+def _cycle_pages(page_history: list[str]) -> list[str]:
+    """Pages involved in the most recent cycle, in the order they appear in
+    the tail. Used to render the nudge message."""
+    seen: list[str] = []
+    for title in page_history[-4:]:
+        if title not in seen:
+            seen.append(title)
+    return seen
+
+
 def _partition_tools(tools: list[Tool]) -> tuple[list[Tool], list[Tool]]:
     """Split tools into (fetch_tools, move_tools).
 
@@ -132,7 +165,15 @@ def basic_agent(tools: list[Tool], game: WikiGame) -> Agent:
 
     async def execute(state: AgentState) -> AgentState:
         state.messages = [system(), _on_page_user(game)]
+        cycle_strikes = 0
+        pending_nudge: str | None = None
         while not game.check_win():
+            if game.turn_limit_reached():
+                game.termination_reason = "turn_limit"
+                break
+            if pending_nudge is not None:
+                state.messages.append(ChatMessageUser(content=pending_nudge))
+                pending_nudge = None
             state.messages.append(ChatMessageUser(content=prompts.NEXT_STEP))
             state.output = await get_model().generate(input=state.messages, tools=tools)
             state.messages.append(state.output.message)
@@ -140,6 +181,12 @@ def basic_agent(tools: list[Tool], game: WikiGame) -> Agent:
                 state = await _run_tool_calls(state, tools)
                 if _last_tool_was_successful_move(state):
                     state.messages = [system(), _on_page_user(game)]
+                    if _detected_cycle(game.page_history):
+                        cycle_strikes += 1
+                        if cycle_strikes >= 2:
+                            game.termination_reason = "cycle"
+                            break
+                        pending_nudge = prompts.cycle_nudge(_cycle_pages(game.page_history))
         return state
 
     return execute
@@ -157,7 +204,11 @@ def react_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = Fa
     async def execute(state: AgentState) -> AgentState:
         state.messages = [system(), _on_page_user(game)]
         mode: _Mode = "fetch"
+        cycle_strikes = 0
         while not game.check_win():
+            if game.turn_limit_reached():
+                game.termination_reason = "turn_limit"
+                break
             if mode == "fetch":
                 await _do_fetch_turn(state, fetch_tools)
             else:
@@ -169,6 +220,16 @@ def react_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = Fa
                 elif _last_tool_was_successful_move(state):
                     state.messages = [system(), _on_page_user(game)]
                     mode = "fetch"
+                    if _detected_cycle(game.page_history):
+                        cycle_strikes += 1
+                        if cycle_strikes >= 2:
+                            game.termination_reason = "cycle"
+                            break
+                        state.messages.append(
+                            ChatMessageUser(
+                                content=prompts.cycle_nudge(_cycle_pages(game.page_history))
+                            )
+                        )
         return state
 
     return execute
@@ -196,7 +257,11 @@ def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = 
         state.messages = rebuild()
         mode: _Mode = "fetch"
         move_reasoning = ""
+        cycle_strikes = 0
         while not game.check_win():
+            if game.turn_limit_reached():
+                game.termination_reason = "turn_limit"
+                break
             if mode == "fetch":
                 await _do_fetch_turn(state, fetch_tools)
             else:
@@ -214,6 +279,16 @@ def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = 
                     )
                     state.messages = rebuild()
                     mode = "fetch"
+                    if _detected_cycle(game.page_history):
+                        cycle_strikes += 1
+                        if cycle_strikes >= 2:
+                            game.termination_reason = "cycle"
+                            break
+                        state.messages.append(
+                            ChatMessageUser(
+                                content=prompts.cycle_nudge(_cycle_pages(game.page_history))
+                            )
+                        )
         return state
 
     return execute

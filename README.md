@@ -33,7 +33,8 @@ Options:
 - `--model openai/gpt-5.4-nano` — overrides `INSPECT_EVAL_MODEL`
 - `--reasoning-effort {none|minimal|low|medium|high|xhigh|max}` — for o-series and gpt-5 models. The `react`/`history` agents rely on the model reasoning before each move; on a reasoning model that means setting this to at least `low`. On the OpenAI gpt-5 family the default is `minimal`, which produces no useful reasoning and the agent will flounder.
 - `--proxy-reasoning` — for models without native reasoning (e.g. `gpt-4o-mini`) or with reasoning effort set to `minimal`. Splits each move turn into a separate text-only reason call (forced `tool_choice="none"`) followed by an act call, so the model's CoT shows up in plain text. Roughly doubles per-move model calls, so prefer a reasoning model when possible.
-- `--message-limit 80` — Inspect aborts the run past this
+- `--turn-limit 40` — max number of moves the agent may make before the run aborts with reason `turn_limit`. Counted at the game layer, so it means the same thing across `basic`/`react`/`history` (which all spend different numbers of messages per move). The agent also auto-detects tight cycles (A↔B oscillation, A→B→C→A): on the first detection it gets a one-shot nudge, on the second it stops with reason `cycle`.
+- `--message-limit 240` — hard backstop on Inspect message count; default is set high enough that `--turn-limit` fires first.
 - `--enable-check-path` — adds the `check_path` dry-run tool
 - `-v` — debug logging
 

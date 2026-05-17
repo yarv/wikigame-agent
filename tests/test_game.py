@@ -81,3 +81,60 @@ async def test_rules_no_cities_does_not_block_countries(mock_wiki):
     async with WikiClient(user_agent="t") as client:
         game = await WikiGameRules.create(client, "Start", "Canada", rules=["no cities"])
         assert game.violates_rules(await client.get_page("Canada")) is None
+
+
+async def test_turn_limit_unset_is_never_reached(mock_wiki):
+    mock_wiki.add_page("A", content="A links to B.", links=["B"])
+    mock_wiki.add_page("B", content="B links to C.", links=["C"])
+    mock_wiki.add_page("C", content="C.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "A", "C")
+        assert game.turn_limit is None
+        assert game.turn_limit_reached() is False
+        await game.move_to("B")
+        assert game.turn_limit_reached() is False
+
+
+async def test_turn_limit_reached_when_moves_equal_limit(mock_wiki):
+    mock_wiki.add_page("A", content="A links to B.", links=["B"])
+    mock_wiki.add_page("B", content="B links to C.", links=["C"])
+    mock_wiki.add_page("C", content="C.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "A", "C", turn_limit=2)
+        assert game.turn_limit_reached() is False  # 0 moves
+        await game.move_to("B")
+        assert game.turn_limit_reached() is False  # 1 move
+        await game.move_to("C")
+        assert game.turn_limit_reached() is True  # 2 moves, at limit
+
+
+async def test_turn_limit_reached_when_overshot(mock_wiki):
+    mock_wiki.add_page("A", content="A links to B.", links=["B"])
+    mock_wiki.add_page("B", content="B links to A.", links=["A"])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "A", "B", turn_limit=1)
+        await game.move_to("B")  # 1 move, at limit
+        await game.move_to("A")  # 2 moves, past limit
+        assert game.turn_limit_reached() is True
+
+
+async def test_check_win_sets_termination_reason(mock_wiki):
+    mock_wiki.add_page("A", content="A links to B.", links=["B"])
+    mock_wiki.add_page("B", content="B.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "A", "B")
+        assert game.termination_reason is None
+        await game.move_to("B")
+        assert game.check_win() is True
+        assert game.termination_reason == "reached_goal"
+
+
+async def test_rules_create_passes_turn_limit(mock_wiki):
+    mock_wiki.add_page("Start", content="Start.", links=[])
+    mock_wiki.add_page("Goal", content="Goal.", links=[])
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGameRules.create(
+            client, "Start", "Goal", rules=["no cities"], turn_limit=5
+        )
+        assert game.turn_limit == 5
+        assert game.rules == ["no cities"]

@@ -43,3 +43,25 @@ REASON_PROMPT = (
     "to lead toward the goal, and why?"
 )
 ACT_PROMPT = "Now act on your reasoning."
+
+# Fair-play note: this only references pages already in the agent's own
+# `page_history` (which it already sees via `on_page`'s "Path so far:" line),
+# so it doesn't leak information about the goal page or its link graph.
+CYCLE_NUDGE_TEMPLATE = (
+    "You appear to be cycling between {pages}. Reconsider whether moving from "
+    "your current page is actually making progress toward the goal. If the "
+    "obvious-looking link keeps sending you back, try a less obvious one."
+)
+
+
+def cycle_nudge(pages: list[str]) -> str:
+    """Format the cycle-nudge message from a list of page titles.
+
+    Renders the pages as `'A' and 'B'` (two pages) or `'A', 'B', and 'C'`
+    (more)."""
+    quoted = [repr(p) for p in pages]
+    if len(quoted) == 2:
+        joined = " and ".join(quoted)
+    else:
+        joined = ", ".join(quoted[:-1]) + f", and {quoted[-1]}"
+    return CYCLE_NUDGE_TEMPLATE.format(pages=joined)

@@ -25,6 +25,7 @@ def print_banner(
     agent_name: str,
     model: str,
     message_limit: int,
+    turn_limit: int | None = None,
     rules: list[str] | None = None,
 ) -> None:
     table = Table.grid(padding=(0, 2))
@@ -34,6 +35,8 @@ def print_banner(
     table.add_row("Goal", Text(game.goal_page.title, style="bold"))
     table.add_row("Agent", agent_name)
     table.add_row("Model", model)
+    if turn_limit is not None:
+        table.add_row("Turn limit", str(turn_limit))
     table.add_row("Message limit", str(message_limit))
     if rules:
         table.add_row("Rules", ", ".join(rules))
@@ -64,14 +67,23 @@ def print_move(game: WikiGame, previous: WikiPage, current: WikiPage) -> None:
     console.print(Panel(body, border_style=style, expand=False))
 
 
+_REASON_TITLES = {
+    "reached_goal": ("Goal reached", "green"),
+    "turn_limit": ("Stopped: turn limit", "yellow"),
+    "cycle": ("Stopped: cycle detected", "yellow"),
+}
+
+
 def print_summary(
     game: WikiGame,
     usage: Mapping[str, ModelUsage] | None = None,
 ) -> None:
     won = game.check_win()
     turns = len(game.page_history) - 1
-    color = "green" if won else "yellow"
-    title = "Goal reached" if won else "Game ended without reaching goal"
+    reason = getattr(game, "termination_reason", None)
+    if won and reason is None:
+        reason = "reached_goal"
+    title, color = _REASON_TITLES.get(reason or "", ("Game ended without reaching goal", "yellow"))
 
     rolled = _roll_up(usage) if usage else None
 
@@ -80,12 +92,28 @@ def print_summary(
         ("Path: ", "dim"),
         (" -> ".join(game.page_history)),
     )
+    if not won and reason in ("turn_limit", "cycle"):
+        detail = _reason_detail(reason, game.page_history)
+        body.append("\n")
+        body.append(detail, style="yellow")
     if rolled is not None:
         body.append("\n")
         body.append(_format_usage_line(rolled), style="dim")
         body.append("\n")
         body.append(_format_cost_line(rolled), style="bold")
     console.print(Panel(body, title=title, border_style=color))
+
+
+def _reason_detail(reason: str, page_history: list[str]) -> str:
+    if reason == "turn_limit":
+        return f"Reason: turn limit reached after {len(page_history) - 1} moves."
+    if reason == "cycle":
+        seen: list[str] = []
+        for title in page_history[-4:]:
+            if title not in seen:
+                seen.append(title)
+        return "Reason: cycle detected — " + " <-> ".join(seen)
+    return ""
 
 
 def _roll_up(usage: Mapping[str, ModelUsage]) -> ModelUsage:
