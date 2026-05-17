@@ -58,8 +58,8 @@ def play(
         typer.Option(
             help="Max number of moves the agent may make before the loop aborts "
             "with reason 'turn_limit'. Counted at the game layer so it means the "
-            "same thing across agents (basic/react/history burn different numbers "
-            "of messages per move)."
+            "same thing across agents (react/history burn different numbers of "
+            "messages per move)."
         ),
     ] = 40,
     message_limit: Annotated[
@@ -84,9 +84,9 @@ def play(
     proxy_reasoning: Annotated[
         bool,
         typer.Option(
-            help="(react/history only) Split each move turn into a separate "
-            "text-only reason call and an act call. Use this for models without "
-            "native reasoning (e.g. gpt-4o-mini) or with reasoning_effort=minimal."
+            help="Split each move turn into a separate text-only reason call "
+            "and an act call. Use this for models without native reasoning "
+            "(e.g. gpt-4o-mini) or with reasoning_effort=minimal."
         ),
     ] = False,
     log_dir: Annotated[
@@ -169,10 +169,7 @@ async def _run(
             tools.append(check_path(game))
 
         agent_factory = AGENTS[agent_name]
-        factory_kwargs: dict = {"tools": tools, "game": game}
-        if agent_name in ("react", "history"):
-            factory_kwargs["proxy_reasoning"] = proxy_reasoning
-        solver = as_solver(agent_factory(**factory_kwargs))
+        solver = as_solver(agent_factory(tools=tools, game=game, proxy_reasoning=proxy_reasoning))
 
         run_name = _task_name(agent_name, start, goal)
 
