@@ -13,11 +13,53 @@ This started as a port of the Chapter 3.4 LLM Agents exercise from [ARENA 3.0](h
 - `tools.py` with `get_content`, `move_page`, and `check_path` (the last one was unimplemented in the notebook).
 - A Rich-based per-turn console display so you can watch the game without spinning up the Inspect log viewer.
 
-## Setup
+## Install
+
+Two paths, depending on whether you just want to run the agent or also hack on it.
+
+### From PyPI (just want to run it)
+
+Pick one of:
 
 ```bash
-uv sync                       # create venv, install
-cp .env.example .env          # then fill in OPENAI_API_KEY etc.
+uv tool install wikigame-agent     # isolated, puts `wikigame` on your PATH
+# or
+pipx install wikigame-agent        # same idea, if you prefer pipx
+# or
+pip install wikigame-agent         # into an existing venv
+```
+
+Then provide an `OPENAI_API_KEY`. Either export it in your shell:
+
+```bash
+export OPENAI_API_KEY=sk-...
+```
+
+…or drop a `.env` file in whatever directory you'll run `wikigame` from — the CLI auto-loads it. Minimal `.env`:
+
+```dotenv
+OPENAI_API_KEY=sk-...
+# Optional — defaults are fine, override if you want:
+# INSPECT_EVAL_MODEL=openai/gpt-5.4-nano
+# WIKIGAME_USER_AGENT=my-tool (https://example.com/contact)
+```
+
+Run it:
+
+```bash
+wikigame play "Canada" "Monty Python"
+```
+
+> Note: `wikigame view` shells out to the `inspect` command from `inspect-ai`. With `uv tool install` or `pipx`, that command isn't on your PATH (only `wikigame` is). For viewing logs from a tool-style install, either run `uvx --from inspect-ai inspect view --log-dir logs` directly, or do a `pip install` into a venv so both commands are available.
+
+### From source (contributing / hacking)
+
+```bash
+git clone https://github.com/yarv/wikigame-agent
+cd wikigame-agent
+uv sync                       # create venv, install dev deps
+cp .env.example .env          # then fill in OPENAI_API_KEY
+uv run wikigame play "Canada" "Monty Python"
 ```
 
 ## Play a game
@@ -26,6 +68,8 @@ cp .env.example .env          # then fill in OPENAI_API_KEY etc.
 uv run wikigame play "Canada" "Monty Python" \
   --model openai/gpt-5.4-nano --reasoning-effort medium
 ```
+
+(Drop the `uv run` prefix if you installed from PyPI.)
 
 Options:
 
