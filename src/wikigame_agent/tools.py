@@ -97,7 +97,7 @@ def move_page(game: WikiGame) -> Tool:
             )
         target = resolution
         try:
-            new_page = await game._client.get_page(target)
+            new_page = await game.client.get_page(target)
         except WikiClientError as e:
             return f"Move failed: could not load page {target!r}: {e}"
 
@@ -149,7 +149,7 @@ def check_path(game: WikiGame) -> Tool:
                 f"({game.current_page.title!r}), not {steps[0]!r}."
             )
 
-        client = game._client
+        client = game.client
         try:
             cursor = await client.get_page(steps[0])
         except WikiClientError as e:
