@@ -14,11 +14,14 @@ from inspect_ai.agent import AgentState
 from inspect_ai.model import ChatMessageTool, ChatMessageUser
 
 from wikigame_agent.agents import (
+    _cycle_pages,
+    _detected_cycle,
     _last_tool_was_successful_move,
     _partition_tools,
     _truncate,
 )
 from wikigame_agent.game import WikiGame
+from wikigame_agent.prompts import cycle_nudge
 from wikigame_agent.tools import check_path, get_content, move_page
 from wikigame_agent.wiki_client import WikiClient
 
@@ -117,3 +120,59 @@ def test_truncate_long_string_uses_ellipsis():
 def test_truncate_strips_and_flattens_newlines():
     out = _truncate("  line one\nline two  ", 100)
     assert out == "line one line two"
+
+
+# --- cycle detection ---------------------------------------------------------
+
+
+def test_detected_cycle_ab_oscillation():
+    assert _detected_cycle(["Start", "A", "B", "A", "B"]) is True
+
+
+def test_detected_cycle_abc_returns_to_a():
+    assert _detected_cycle(["Start", "A", "B", "C", "A"]) is True
+
+
+def test_detected_cycle_no_cycle_returns_false():
+    assert _detected_cycle(["Start", "A", "B", "C", "D"]) is False
+
+
+def test_detected_cycle_short_history_returns_false():
+    # Need at least 4 entries for any cycle check to fire.
+    assert _detected_cycle([]) is False
+    assert _detected_cycle(["A"]) is False
+    assert _detected_cycle(["A", "B"]) is False
+    assert _detected_cycle(["A", "B", "A"]) is False
+
+
+def test_detected_cycle_old_repeat_in_middle_does_not_trigger():
+    """A repeat that's not in the tail-of-4 must not trigger — we only catch
+    *tight* recent loops, not any prior revisit."""
+    history = ["A", "B", "A", "C", "D", "E", "F"]
+    assert _detected_cycle(history) is False
+
+
+def test_detected_cycle_three_in_a_row_same_page_is_not_a_cycle():
+    """Sanity: the move tool prevents staying put, but if a malformed
+    history somehow had a self-loop the cycle detector should treat it as
+    pathological rather than the A↔B pattern."""
+    assert _detected_cycle(["A", "A", "A", "A"]) is False
+
+
+def test_cycle_pages_dedupes_in_order_two_pages():
+    assert _cycle_pages(["Start", "A", "B", "A", "B"]) == ["A", "B"]
+
+
+def test_cycle_pages_dedupes_in_order_three_pages():
+    assert _cycle_pages(["Start", "A", "B", "C", "A"]) == ["A", "B", "C"]
+
+
+def test_cycle_nudge_two_pages_uses_and():
+    msg = cycle_nudge(["Persuasion", "Rhetoric"])
+    assert "'Persuasion' and 'Rhetoric'" in msg
+    assert "cycling between" in msg
+
+
+def test_cycle_nudge_three_pages_uses_comma_and():
+    msg = cycle_nudge(["A", "B", "C"])
+    assert "'A', 'B', and 'C'" in msg
