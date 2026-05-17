@@ -1,14 +1,14 @@
-"""Wiki-game agents.
+"""Wiki-game agent.
 
-Two variants:
+A single strategy: one model call per turn, alternating a forced `get_content`
+on each new page with a `move_page` call (reasoning + tool call in a single
+response). With `proxy_reasoning=True` the move turn splits into a separate
+text-only reason call followed by the act call — useful for models without
+native reasoning (e.g. gpt-4o-mini) or with reasoning turned off.
 
-- `react_agent`: one model call per turn, alternating a forced `get_content`
-  on each new page with a `move_page` call (reasoning + tool call in a single
-  response). With `proxy_reasoning=True` the move turn splits into a separate
-  text-only reason call followed by the act call — useful for models without
-  native reasoning (e.g. gpt-4o-mini) or with reasoning turned off.
-- `history_agent`: `react_agent` + retains a compact textual record of prior
-  moves across page transitions, instead of throwing the conversation away.
+With `keep_notes=True`, the agent carries a compact textual record of prior
+moves across page transitions, so the model can see *why* it picked each
+prior page rather than just where it ended up.
 """
 
 from __future__ import annotations
@@ -26,8 +26,6 @@ from inspect_ai.tool import Tool, ToolChoice, ToolDef, ToolFunction
 
 from . import prompts
 from .game import WikiGame, WikiGameRules
-
-AgentName = Literal["react", "history"]
 
 _Mode = Literal["fetch", "move"]
 _GET_CONTENT = "get_content"
@@ -101,9 +99,9 @@ def _partition_tools(tools: list[Tool]) -> tuple[list[Tool], list[Tool]]:
         else:
             move_tools.append(t)
     if not fetch_tools:
-        raise ValueError(f"react/history agents require a {_GET_CONTENT!r} tool")
+        raise ValueError(f"wiki_agent requires a {_GET_CONTENT!r} tool")
     if not move_tools:
-        raise ValueError("react/history agents require at least one move-phase tool")
+        raise ValueError("wiki_agent requires at least one move-phase tool")
     return fetch_tools, move_tools
 
 
@@ -154,51 +152,19 @@ async def _do_move_turn(state: AgentState, move_tools: list[Tool], *, proxy_reas
 
 
 @agent
-def react_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = False) -> Agent:
-    """ReAct with a forced fetch-then-move alternation."""
+def wiki_agent(
+    tools: list[Tool],
+    game: WikiGame,
+    *,
+    keep_notes: bool = False,
+    proxy_reasoning: bool = False,
+) -> Agent:
+    """Forced fetch→move alternation, with optional note carry-over.
 
-    fetch_tools, move_tools = _partition_tools(tools)
-
-    def system() -> ChatMessageSystem:
-        return ChatMessageSystem(content=prompts.SYSTEM_REACT)
-
-    async def execute(state: AgentState) -> AgentState:
-        state.messages = [system(), _on_page_user(game)]
-        mode: _Mode = "fetch"
-        cycle_strikes = 0
-        while not game.check_win():
-            if game.turn_limit_reached():
-                game.termination_reason = "turn_limit"
-                break
-            if mode == "fetch":
-                await _do_fetch_turn(state, fetch_tools)
-            else:
-                await _do_move_turn(state, move_tools, proxy_reasoning=proxy_reasoning)
-            if state.output.message.tool_calls:
-                state = await _run_tool_calls(state, tools)
-                if mode == "fetch":
-                    mode = "move"
-                elif _last_tool_was_successful_move(state):
-                    state.messages = [system(), _on_page_user(game)]
-                    mode = "fetch"
-                    if _detected_cycle(game.page_history):
-                        cycle_strikes += 1
-                        if cycle_strikes >= 2:
-                            game.termination_reason = "cycle"
-                            break
-                        state.messages.append(
-                            ChatMessageUser(
-                                content=prompts.cycle_nudge(_cycle_pages(game.page_history))
-                            )
-                        )
-        return state
-
-    return execute
-
-
-@agent
-def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = False) -> Agent:
-    """`react_agent` + carries reasoning notes across moves instead of dropping them."""
+    On a successful move the message history is rebuilt from scratch (system
+    prompt + on-page user message). With `keep_notes=True`, a one-line record
+    of each prior move's reasoning is also prepended.
+    """
 
     fetch_tools, move_tools = _partition_tools(tools)
     notes: list[str] = []
@@ -206,15 +172,15 @@ def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = 
     def system() -> ChatMessageSystem:
         return ChatMessageSystem(content=prompts.SYSTEM_REACT)
 
-    async def execute(state: AgentState) -> AgentState:
-        def rebuild() -> list:
-            messages = [system(), _on_page_user(game)]
-            if notes:
-                messages.append(
-                    ChatMessageUser(content="Notes from previous moves:\n- " + "\n- ".join(notes))
-                )
-            return messages
+    def rebuild() -> list:
+        messages = [system(), _on_page_user(game)]
+        if keep_notes and notes:
+            messages.append(
+                ChatMessageUser(content="Notes from previous moves:\n- " + "\n- ".join(notes))
+            )
+        return messages
 
+    async def execute(state: AgentState) -> AgentState:
         state.messages = rebuild()
         mode: _Mode = "fetch"
         move_reasoning = ""
@@ -234,10 +200,13 @@ def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = 
                 if mode == "fetch":
                     mode = "move"
                 elif _last_tool_was_successful_move(state):
-                    notes.append(
-                        f"On {game.page_history[-2]!r}, reasoned: "
-                        f"{_truncate(move_reasoning, 240)} -> moved to {game.page_history[-1]!r}."
-                    )
+                    if keep_notes:
+                        prev = game.page_history[-2]
+                        curr = game.page_history[-1]
+                        notes.append(
+                            f"On {prev!r}, reasoned: "
+                            f"{_truncate(move_reasoning, 240)} -> moved to {curr!r}."
+                        )
                     state.messages = rebuild()
                     mode = "fetch"
                     if _detected_cycle(game.page_history):
@@ -258,9 +227,3 @@ def history_agent(tools: list[Tool], game: WikiGame, *, proxy_reasoning: bool = 
 def _truncate(s: str, max_len: int) -> str:
     s = s.strip().replace("\n", " ")
     return s if len(s) <= max_len else s[: max_len - 1] + "…"
-
-
-AGENTS: dict[AgentName, Agent] = {
-    "react": react_agent,
-    "history": history_agent,
-}
