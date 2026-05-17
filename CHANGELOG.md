@@ -9,6 +9,25 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.7.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.6.1...wikigame-agent-v0.7.0) (2026-05-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* `--agent` CLI option is removed. The `wikigame_agent.agents` module no longer exports `react_agent`, `history_agent`, `AGENTS`, or `AgentName` — import `wiki_agent` directly.
+* `--agent basic` is no longer valid.
+
+### Features
+
+* **agents:** turn-based budget, cycle detection, and graceful loop abort ([#29](https://github.com/yarv/wikigame-agent/issues/29)) ([9234d8a](https://github.com/yarv/wikigame-agent/commit/9234d8a49963d5335ade3899ca98579c2795425e))
+* collapse agent strategies into single wiki_agent with --notes flag ([#32](https://github.com/yarv/wikigame-agent/issues/32)) ([aaa33fc](https://github.com/yarv/wikigame-agent/commit/aaa33fc34e6100e01c5d0d366e67ccf3109e9221))
+* drop basic agent strategy ([#31](https://github.com/yarv/wikigame-agent/issues/31)) ([4a6ce4d](https://github.com/yarv/wikigame-agent/commit/4a6ce4d0e8f72027f0d142299215e8a1c30f4894))
+
+
+### Documentation
+
+* detailed install instructions for PyPI + source paths ([#33](https://github.com/yarv/wikigame-agent/issues/33)) ([a98aac1](https://github.com/yarv/wikigame-agent/commit/a98aac10a7058a3a5f01c14eb28b038d88505af3))
+
 ## [0.6.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.6.0...wikigame-agent-v0.6.1) (2026-05-16)
 
 
