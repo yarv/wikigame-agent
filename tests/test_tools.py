@@ -164,6 +164,64 @@ async def test_move_page_rejects_ambiguous_bare_click(mock_wiki):
         assert game.current_page.title == "Saving Mr. Banks"
 
 
+async def test_move_to_disambiguation_page_lands_on_disambig(mock_wiki):
+    # Disambiguation pages are no longer auto-resolved by the client. The agent
+    # should land on the disambig page, see the options enumerated as <link>
+    # tags in the next get_content call, and pick one itself — matching what
+    # a human player would experience (and consuming one move for the misclick).
+    mock_wiki.add_page(
+        "Beverage",
+        content="The article on Beverage mentions Lemonade somewhere.",
+        links=["Lemonade (disambiguation)"],
+    )
+    mock_wiki.add_page(
+        "Lemonade (disambiguation)",
+        content=(
+            "Lemonade may refer to:\n"
+            "Lemonade, a sweetened lemon-flavored beverage.\n"
+            "Lemonade (Beyonce album), the 2016 visual album.\n"
+        ),
+        # First link is a navbox-style entry that would have been picked by
+        # the old auto-resolve logic — make sure the agent never lands there.
+        links=["Boys Noize", "Lemonade", "Lemonade (Beyonce album)"],
+        disambiguation=True,
+    )
+    mock_wiki.add_page("Lemonade", content="A beverage.", links=[])
+    mock_wiki.add_page("Lemonade (Beyonce album)", content="The album.", links=[])
+    mock_wiki.add_page("Boys Noize", content="A producer.", links=[])
+
+    async with WikiClient(user_agent="t") as client:
+        game = await WikiGame.create(client, "Beverage", "Lemonade (Beyonce album)")
+        move = move_page(game)
+        get = get_content(game)
+
+        # The body shows "Lemonade", which resolves to the disambig target.
+        result = await move(page="Lemonade")
+        assert "successful" in result.lower()
+        # Agent lands on the disambig page itself, not on whichever link the
+        # MediaWiki API returned first (which would be "Boys Noize").
+        assert game.current_page.title == "Lemonade (disambiguation)"
+        assert game.current_page.title != "Boys Noize"
+        # The misclick costs a hop: starting page + disambig = 2 history entries.
+        assert game.page_history == ["Beverage", "Lemonade (disambiguation)"]
+        # No win yet — the agent is on the disambig page, not the actual goal.
+        assert not game.check_win()
+
+        # Follow-up get_content surfaces the disambig options as <link> tags.
+        content = await get()
+        assert "<link>Lemonade (Beyonce album)</link>" in content
+        assert "<link>Lemonade</link>" in content
+        # The navbox-only "Boys Noize" link is not body-visible, so it isn't
+        # offered as a permitted click.
+        assert "Boys Noize" not in content
+
+        # And the agent can click through unambiguously to the goal option.
+        result2 = await move(page="Lemonade (Beyonce album)")
+        assert "successful" in result2.lower()
+        assert game.current_page.title == "Lemonade (Beyonce album)"
+        assert game.check_win()
+
+
 async def test_check_path_tool(mock_wiki):
     mock_wiki.add_page("A", content="A links to B.", links=["B"])
     mock_wiki.add_page("B", content="B links to C.", links=["C"])

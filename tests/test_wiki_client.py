@@ -78,21 +78,34 @@ async def test_get_page_caches(mock_wiki):
     assert len(calls) == 1
 
 
-async def test_disambiguation_resolves_to_first_link(mock_wiki):
+async def test_disambiguation_page_is_returned_as_is(mock_wiki):
+    # Disambig pages are now traversed like any other page — the agent picks
+    # an option itself. Previously the client auto-followed `all_links[0]`,
+    # which is whatever MediaWiki's links API returned first (e.g. a navbox
+    # link), not what a human would pick.
     mock_wiki.add_page(
-        "Python",
-        content="Python may refer to:",
-        links=["Python (programming language)"],
+        "Lemonade (disambiguation)",
+        content=(
+            "Lemonade may refer to:\n"
+            "Lemonade, a sweetened lemon-flavored beverage.\n"
+            "Lemonade (Beyonce album), the 2016 visual album.\n"
+        ),
+        # Boys Noize appears first because MediaWiki's links API returns
+        # navbox/template links alongside body links, in pageid order — not
+        # in document order. The old auto-resolve would have followed it.
+        links=["Boys Noize", "Lemonade", "Lemonade (Beyonce album)"],
         disambiguation=True,
     )
-    mock_wiki.add_page(
-        "Python (programming language)",
-        content="Python is a high-level programming language.",
-        links=[],
-    )
     async with WikiClient(user_agent="test-agent") as client:
-        page = await client.get_page("Python")
-    assert page.title == "Python (programming language)"
+        page = await client.get_page("Lemonade (disambiguation)")
+    assert page.title == "Lemonade (disambiguation)"
+    assert "Lemonade may refer to" in page.content
+    # Disambig options are reachable via the link index (body-visible only),
+    # but the navbox-only "Boys Noize" is correctly excluded.
+    permitted = page.permitted_links()
+    assert "Lemonade" in permitted
+    assert "Lemonade (Beyonce album)" in permitted
+    assert "Boys Noize" not in permitted
 
 
 async def test_missing_page_with_suggestion(mock_wiki):
