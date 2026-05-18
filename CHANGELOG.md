@@ -9,6 +9,13 @@ Entries from v0.2.0 onward are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.7.1](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.7.0...wikigame-agent-v0.7.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* **wiki-client:** stop auto-resolving disambiguation pages ([#34](https://github.com/yarv/wikigame-agent/issues/34)) ([012234d](https://github.com/yarv/wikigame-agent/commit/012234da3d02f0297cbdb21e41a3ba902025324d))
+
 ## [0.7.0](https://github.com/yarv/wikigame-agent/compare/wikigame-agent-v0.6.1...wikigame-agent-v0.7.0) (2026-05-17)
 
 
