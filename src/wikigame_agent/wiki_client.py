@@ -187,7 +187,11 @@ class WikiClient:
             ) from e
 
     async def get_page(self, title: str) -> WikiPage:
-        """Fetch a page by title, resolving redirects and disambiguation."""
+        """Fetch a page by title, following redirects and OpenSearch suggestions.
+
+        Disambiguation pages are returned as-is — the caller is expected to
+        present the options and let a downstream actor pick one.
+        """
         key = title.strip().lower()
         if key in self._cache:
             return self._cache[key]
@@ -230,12 +234,14 @@ class WikiClient:
 
         assert page_info is not None
 
-        if "disambiguation" in page_info.get("pageprops", {}):
-            if not all_links:
-                raise WikiPageNotFound(f"Disambiguation page with no options: {title}")
-            logger.info("Resolving disambiguation %r -> %r", title, all_links[0])
-            return await self._fetch_page(all_links[0])
-
+        # Disambiguation pages are returned as-is. The agent traverses them like
+        # any other page (it gets the body, picks an option from <link> tags,
+        # and clicks). Auto-resolving here used to follow `all_links[0]`, which
+        # is whatever MediaWiki's links API returned first (pageid/alphabetical),
+        # not the document order of the options — e.g. on "Lemonade
+        # (disambiguation)" it picked "Boys Noize" (linked from a navbox) over
+        # any actual disambig option. It also broke fair-play: a human lands on
+        # the disambig page and chooses; the agent must do the same.
         content = page_info.get("extract", "")
         return WikiPage(
             title=page_info["title"],
