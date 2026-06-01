@@ -97,6 +97,12 @@
       "cache_read": 5e-07,
       "cache_write": 6.25e-06
     },
+    "anthropic/claude-opus-4-8": {
+      "input": 5e-06,
+      "output": 2.5e-05,
+      "cache_read": 5e-07,
+      "cache_write": 6.25e-06
+    },
     "anthropic/claude-sonnet-4-20250514": {
       "input": 3e-06,
       "output": 1.5e-05,
